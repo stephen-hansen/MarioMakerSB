@@ -1,0 +1,264 @@
+' MANDATORY FIRST SETUP VARIABLES
+fpath = Program.Directory + "\"
+' PRE-DEFINED VARIABLES '
+maxw = 240
+maxh = 28
+gridsize = 32
+scroll = 4
+menusize = (gridsize*100)/32
+screenextra = menusize * 2
+
+drag = 0
+throwx = 0
+throwy = 0
+prevposx = 0
+prevposy = 0
+deltax = 0
+deltay = 0
+
+camUp = 0
+camDown = 0
+camLeft = 0 
+camRight = 0
+
+playerUp = 0
+playerDown = 0
+playerLeft = 0 
+playerRight = 0
+
+' GRAPHICSWINDOW SET-UP ' 
+width = Math.Round(maxw/10) * gridsize
+height = Math.Round(maxh/2) * gridsize
+GraphicsWindow.Width = width
+GraphicsWindow.Height = height
+GraphicsWindow.PenWidth = 0
+GraphicsWindow.BackgroundColor = "SkyBlue"
+
+' DESIGN MODE SET-UP '
+GraphicsWindow.Width = width + screenextra
+GraphicsWindow.Height = height + screenextra
+For i = 0 To maxw
+  GraphicsWindow.BrushColor = "White"
+  If Math.Round((i*gridsize)/width) = (i*gridsize)/width Then 
+    GraphicsWindow.BrushColor = "Gold"
+  EndIf  
+  line[1][i] = Shapes.AddRectangle(1,maxh*gridsize)
+  linex[1][i] = i*gridsize + menusize
+  liney[1][i] = menusize
+  Shapes.Move(line[1][i],linex[1][i],liney[1][i])
+EndFor
+For i = 0 To maxh
+  GraphicsWindow.BrushColor = "White"
+  If Math.Round((i*gridsize)/height) = (i*gridsize)/height Then 
+    GraphicsWindow.BrushColor = "Gold"
+  EndIf
+  line[2][i] = Shapes.AddRectangle(maxw*gridsize,1)
+  linex[2][i] = menusize
+  liney[2][i] = i*gridsize + menusize
+  Shapes.Move(line[2][i],linex[2][i],liney[2][i])
+EndFor
+camx = 0
+camy = (Math.Round(maxh)*gridsize)  - (Math.Round(maxh/2)*gridsize) 
+wscroll = Math.Power(width,2)/(maxw*gridsize)
+hscroll = Math.Power(height,2)/(maxh*gridsize)
+GraphicsWindow.BrushColor = "Gray"
+wscrollbar = Shapes.AddRectangle(wscroll, 10)
+hscrollbar = Shapes.AddRectangle(10, hscroll)
+Shapes.Move(wscrollbar, camx + menusize, height - 10 + menusize)
+Shapes.Move(hscrollbar, width - 10 + menusize, camy + menusize)
+player = Shapes.AddImage(fpath + "player.png")
+playerX = (width+screenextra)/2 - gridsize/2
+playerY = (height+screenextra)/2 - gridsize/2
+Shapes.Move(player, playerX, playerY)
+GraphicsWindow.BrushColor = "White"
+menu = Shapes.AddImage(fpath + "borderBuild.png")
+Shapes.Move(menu, 0, 0)
+playBtn = Shapes.AddImage(fpath + "play.png")
+Shapes.Move(playBtn, 0, height + menusize)
+saveBtn = Shapes.AddImage(fpath + "save.png")
+Shapes.Move(saveBtn, width + menusize, 0)
+
+' EVENT DEFINING '
+GraphicsWindow.KeyDown = KeyDownEvent
+GraphicsWindow.KeyUp = KeyUpEvent
+GraphicsWindow.MouseMove = MouseMoveEvent
+GraphicsWindow.MouseDown = MouseDownEvent
+GraphicsWindow.MouseUp = MouseUpEvent
+
+' MAIN LOOP '
+While "true"
+  Program.Delay(10)
+  'Update Camera positions
+  If camx + width - camLeft + camRight <= maxw * gridsize And camx - camLeft + camRight >= 0 Then
+    camx = camx - camLeft + camRight
+  EndIf
+  If camy + height - camUp + camDown <= maxh * gridsize And camy - camUp + camDown >= 0 Then  
+    camy = camy - camUp + camDown
+  EndIf 
+  
+  'Move objects (camera)
+  For i = 0 To maxw
+    Shapes.Move(line[1][i], linex[1][i] - camx, liney[1][i] - camy)
+  EndFor
+  For i = 0 To maxh
+    Shapes.Move(line[2][i], linex[2][i] - camx, liney[2][i] - camy)
+  EndFor  
+  Shapes.Move(wscrollbar, (width * camx)/(maxw*gridsize) + menusize, height - 10 + menusize)
+  Shapes.Move(hscrollbar, width - 10 + menusize, (height * camy)/(maxh*gridsize) + menusize)
+  
+  'Update Player positions
+  If drag <> 3 Then
+    If playerX - playerLeft + playerRight + gridsize + throwx <= width + menusize And playerX - playerLeft + playerRight + throwx >= 0 + menusize Then
+      playerX = playerX - playerLeft + playerRight + throwx
+    EndIf
+    If playerY - playerUp + playerDown + gridsize + throwy <= height + menusize And playerY - playerUp + playerDown + throwy >= 0 + menusize Then
+      playerY = playerY - playerUp + playerDown + throwy
+    EndIf
+  EndIf
+  
+  If playerX + throwx <= 0 + menusize Or playerX + gridsize + throwx >= width + menusize Then
+    throwx = -throwx 
+  EndIf 
+  If playerY + throwy <= 0 + menusize Or playerY + gridsize + throwy >= height + menusize Then
+    throwy = -throwy
+  EndIf
+  
+  If throwx > 0 Then
+    throwx = throwx - 0.1
+  EndIf  
+  If throwx < 0 Then
+    throwx = throwx + 0.1
+  EndIf
+  If throwy > 0 Then
+    throwy = throwy - 0.1
+  EndIf  
+  If throwy < 0 Then
+    throwy = throwy + 0.1
+  EndIf
+  
+  Shapes.Move(player,playerX,playerY)
+EndWhile
+
+' EVENTS '
+Sub KeyDownEvent
+  If GraphicsWindow.LastKey = "Left" Then
+    camLeft = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "Right" Then
+    camRight = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "Up" Then
+    camUp = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "Down" Then
+    camDown = scroll
+  EndIf
+  
+  If GraphicsWindow.LastKey = "A" Then
+    playerLeft = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "D" Then
+    playerRight = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "W" Then
+    playerUp = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "S" Then
+    playerDown = scroll
+  EndIf  
+EndSub  
+
+Sub KeyUpEvent
+  If GraphicsWindow.LastKey = "Left" Then
+    camLeft = 0
+  EndIf
+  If GraphicsWindow.LastKey = "Right" Then
+    camRight = 0
+  EndIf
+  If GraphicsWindow.LastKey = "Up" Then
+    camUp = 0
+  EndIf
+  If GraphicsWindow.LastKey = "Down" Then
+    camDown = 0
+  EndIf
+  
+  If GraphicsWindow.LastKey = "A" Then
+    playerLeft = 0
+  EndIf
+  If GraphicsWindow.LastKey = "D" Then
+    playerRight = 0
+  EndIf
+  If GraphicsWindow.LastKey = "W" Then
+    playerUp = 0
+  EndIf
+  If GraphicsWindow.LastKey = "S" Then
+    playerDown = 0
+  EndIf 
+EndSub  
+
+Sub MouseDownEvent
+  If GraphicsWindow.MouseY >= height - 10 + menusize And GraphicsWindow.MouseX >= (width * camx)/(maxw*gridsize) + menusize And GraphicsWindow.MouseX <= (width * camx)/(maxw*gridsize) + Math.Power(width,2)/(maxw*gridsize) + menusize Then
+    offsetx = GraphicsWindow.MouseX - ((width * camx)/(maxw*gridsize))
+  EndIf
+  If GraphicsWindow.MouseX >= width - 10 + menusize And GraphicsWindow.MouseY >= (height * camy)/(maxh*gridsize) + menusize And GraphicsWindow.MouseY <= (height * camy)/(maxh*gridsize) + Math.Power(height,2)/(maxh*gridsize) + menusize Then
+    offsety = GraphicsWindow.MouseY - ((height * camy)/(maxh*gridsize))
+  EndIf  
+  If GraphicsWindow.MouseX >= playerX And GraphicsWindow.MouseX <= playerX + gridsize And GraphicsWindow.MouseY >= playerY And GraphicsWindow.MouseY <= playerY + gridsize Then
+    offsetpx = GraphicsWindow.MouseX - playerX
+    offsetpy = GraphicsWindow.MouseY - playerY
+    deltax = 0
+    deltay = 0
+    prevposx = 0
+    prevposy = 0 
+    throwx = 0
+    throwy = 0  
+  EndIf  
+EndSub   
+
+Sub MouseUpEvent
+  drag = 0
+  If deltax > 3 Or deltax < -3 Then
+    If deltax > 10 Or deltax <-10 Then
+      throwx = (deltax/Math.Abs(deltax)) * 10
+    Else
+      throwx = deltax
+    EndIf  
+  EndIf 
+  If deltay > 3 Or deltay < -3 Then
+    If deltay > 10 Or deltay <-10 Then
+      throwy = (deltay/Math.Abs(deltay)) * 10
+    Else
+      throwy = deltay
+    EndIf
+  EndIf  
+EndSub  
+
+Sub MouseMoveEvent
+  If ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseY > height - 10 + menusize And GraphicsWindow.MouseX > (width * camx)/(maxw*gridsize) - offsetx + menusize And GraphicsWindow.MouseX < (width * camx)/(maxw*gridsize) + Math.Power(width,2)/(maxw*gridsize) + menusize) Or drag = 1) And GraphicsWindow.MouseX - offsetx >= 0 And GraphicsWindow.MouseX + Math.Power(width,2)/(maxw*gridsize) - offsetx <= width Then
+    drag = 1
+    camx = ((maxw*gridsize*(GraphicsWindow.MouseX-offsetx)))/width
+  EndIf
+  If ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseX > width - 10 + menusize And GraphicsWindow.MouseY > (height * camy)/(maxh*gridsize) - offsety + menusize And GraphicsWindow.MouseY < (height * camy)/(maxh*gridsize) + Math.Power(height,2)/(maxh*gridsize) + menusize) Or drag = 2) And GraphicsWindow.MouseY - offsety >= 0 And GraphicsWindow.MouseY + Math.Power(height,2)/(maxh*gridsize) - offsety <= height Then
+    drag = 2
+    camy = ((maxh*gridsize*(GraphicsWindow.MouseY-offsety)))/height
+  EndIf
+  If ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseX >= playerX And GraphicsWindow.MouseX <= playerX + gridsize And GraphicsWindow.MouseY >= playerY And GraphicsWindow.MouseY <= playerY + gridsize) Or drag = 3) And GraphicsWindow.MouseX - offsetpx >= 0 + menusize And GraphicsWindow.MouseX + gridsize - offsetpx <= width + menusize Then
+    drag = 3
+    playerX = GraphicsWindow.MouseX - offsetpx
+  EndIf
+  If ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseX >= playerX And GraphicsWindow.MouseX <= playerX + gridsize And GraphicsWindow.MouseY >= playerY And GraphicsWindow.MouseY <= playerY + gridsize) Or drag = 3) And GraphicsWindow.MouseY - offsetpy >= 0 + menusize And GraphicsWindow.MouseY + gridsize - offsetpy <= height + menusize Then
+    drag = 3
+    playerY = GraphicsWindow.MouseY - offsetpy
+  EndIf  
+  If drag = 3 Then
+    deltax = GraphicsWindow.MouseX - prevposx
+    deltay = GraphicsWindow.MouseY - prevposy 
+    prevposx = GraphicsWindow.MouseX
+    prevposy = GraphicsWindow.MouseY
+  Else
+    deltax = 0
+    deltay = 0
+    prevposx = 0
+    prevposy = 0  
+  EndIf  
+EndSub 

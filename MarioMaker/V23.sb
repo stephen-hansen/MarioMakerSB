@@ -1,0 +1,2268 @@
+' MANDATORY FIRST SETUP VARIABLES
+fpath = Program.Directory + "\"
+' TO DO:
+' Talk to parents about teaching with Militello
+' Code save button
+' Fix camera scrolling
+' Fix hidden blocks
+' Add pswitch, pdoor
+' Add goombas, spinies
+' ----------------------
+' Use Image to flip and rotate
+' TextWindow options pane for certain tiles
+' Fix block layering (no two on same tile) fixed?
+' Finalize blocks
+' Fix layering
+' Add enemies
+' Extend lag bounds
+' Tweak P-Speed variables
+' Fix top bound
+
+' PRE-DEFINED VARIABLES '
+curUser = "Steve"
+TextWindow.BackgroundColor = "DarkMagenta"
+TextWindow.ForegroundColor = "Magenta"
+TextWindow.Hide()
+start:
+Sound.Stop(fpath + "Music\" + song + ".mp3")
+startTrig = 0
+chosenLevel = ""
+song = ""
+For i = 1 To blockTotal
+  Shapes.Remove(block[i])
+  blockx[i] = ""
+  blocky[i] = ""
+  blockType[i] = ""
+  blockCol[i] = ""
+  blockGone[i] = ""
+EndFor
+GraphicsWindow.CanResize = "false"
+GraphicsWindow.Clear()
+maxw = 240
+maxh = 28
+gridsize = 32
+scroll = 8
+menusize = (gridsize*100)/32
+screenextra = menusize * 2
+
+cursor = "blank"
+
+drag = 0
+throwx = 0
+throwy = 0
+prevposx = 0
+prevposy = 0
+deltax = 0
+deltay = 0
+
+camUp = 0
+camDown = 0
+camLeft = 0 
+camRight = 0
+
+playerUp = 0
+playerDown = 0
+playerLeft = 0 
+playerRight = 0
+
+mode = "menu"
+playo = 0
+
+' EVENT DEFINING '
+GraphicsWindow.KeyDown = KeyDownEvent
+GraphicsWindow.KeyUp = KeyUpEvent
+GraphicsWindow.MouseMove = MouseMoveEvent
+GraphicsWindow.MouseDown = MouseDownEvent
+GraphicsWindow.MouseUp = MouseUpEvent
+
+' GRAPHICSWINDOW SET-UP ' 
+width = Math.Round(maxw/10) * gridsize
+height = Math.Round(maxh/2) * gridsize
+GraphicsWindow.Width = width
+GraphicsWindow.Height = height
+GraphicsWindow.PenWidth = 0
+GraphicsWindow.BackgroundColor = "SkyBlue"
+GraphicsWindow.Width = width + screenextra
+GraphicsWindow.Height = height + screenextra
+
+Shapes.Remove(menu)
+menu = Shapes.AddImage(fpath + "borderMenu.png")
+Shapes.Move(menu,0,0)
+'LDShapes.ZIndex(menu,99990)
+menuBtn1 = Shapes.AddImage(fpath + "btn1.png")
+Shapes.Move(menuBtn1, GraphicsWindow.Width/4 - 50, GraphicsWindow.Height/2 - 50) 
+'LDShapes.ZIndex(menuBtn1,99991)
+menuBtn2 = Shapes.AddImage(fpath + "btn2.png")
+Shapes.Move(menuBtn2, GraphicsWindow.Width/2 - 50, GraphicsWindow.Height/2 - 50) 
+'LDShapes.ZIndex(menuBtn2,99991)
+menuBtn3 = Shapes.AddImage(fpath + "btn3.png")
+Shapes.Move(menuBtn3, (GraphicsWindow.Width*3)/4 - 50, GraphicsWindow.Height/2 - 50) 
+'LDShapes.ZIndex(menuBtn3,99991)
+GraphicsWindow.FontSize = 16
+GraphicsWindow.BrushColor = "Black"
+status = Shapes.AddText("")
+Shapes.Move(status, 0, 0)
+'LDShapes.ZIndex(status, 99991)
+prevUser = ""
+gameTrig = 0
+While mode = "menu"
+  If startTrig = 1 Then
+    Goto start
+  EndIf
+  If playo = 2 Then 
+    playo = 0
+    Shapes.ShowShape(menuBtn1)
+    Shapes.ShowShape(menuBtn2)
+    Shapes.ShowShape(menuBtn3)
+  EndIf  
+  If prevUser <> curUser Then
+    If curUser <> "" Then
+      Shapes.SetText(status, "Current User: " + curUser)
+    Else
+      Shapes.SetText(status, "")  
+    EndIf
+    prevUser = curUser
+  EndIf  
+  If playo = 1 Then
+    Shapes.HideShape(menuBtn1)
+    Shapes.HideShape(menuBtn2)
+    Shapes.HideShape(menuBtn3)
+    menuBtn4 = Shapes.AddImage(fpath + "btn4.png")
+    Shapes.Move(menuBtn4, GraphicsWindow.Width - 100, 0) 
+    'LDShapes.ZIndex(menu, 0)
+    tot = 0
+    For i = 1 To 5
+      For j = 1 To 6
+        tot = tot + 1
+        GraphicsWindow.BrushColor = "Gray"
+        GraphicsWindow.PenColor = "Gray"
+        box[tot] = Shapes.AddRectangle(135,70)
+        GraphicsWindow.BrushColor = "White"
+        GraphicsWindow.FontSize = 12
+        boxName[tot] = Shapes.AddText("")
+        boxCreator[tot] = Shapes.AddText("")
+        Shapes.Move(box[tot], 10 + 145*(j-1), 100 + 80*(i-1))
+        Shapes.Move(boxName[tot], 15 + 145*(j-1), 115 + 80*(i-1))
+        Shapes.Move(boxCreator[tot], 15 + 145*(j-1), 145 + 80*(i-1))
+      EndFor
+    EndFor  
+    If gameTrig = 0 Then
+      gameTrig = 1
+      num = 0
+      levels = File.GetDirectories(fpath + "Levels\Play\")
+      If levels <> "FAILED" Then
+        For i = 1 To Array.GetItemCount(levels)
+          list = File.GetFiles(levels[i])
+          For j = 1 To Array.GetItemCount(list)
+            num = num + 1
+            GraphicsWindow.FontSize = 12
+            boxLevel[num] = list[j]
+            Shapes.SetText(boxName[num],File.ReadLine(list[j],1))
+            Shapes.SetText(boxCreator[num],File.ReadLine(list[j],2))
+            'Kyrell2
+          EndFor
+        EndFor
+      Else
+        GraphicsWindow.ShowMessage("There are no levels yet! Make one!", "ERROR") 
+      EndIf
+      gameTrig = 0
+      playo = 3
+    EndIf
+  EndIf  
+EndWhile
+If mode = "build" Then
+  TextWindow.Clear()
+  TextWindow.Title = "LOADING"
+  TextWindow.WriteLine("PLEASE WAIT")
+EndIf
+
+Shapes.Remove(menuBtn1)
+Shapes.Remove(menuBtn2)
+Shapes.Remove(menuBtn3)
+Shapes.Remove(menuBtn4)
+
+' DEFINE TILES '
+Shapes.Remove(spawn)
+Shapes.Remove(goal)
+pinkTotal = 0
+keyTotal = 0
+If mode <> "play" Then
+  For i = 1 To maxh-1
+    For k = 1 To maxw
+      If (i <> maxh - 1 Or k <> 2) And (i <> maxh - 3 Or k <> maxw/4) Then
+        tile[i][k] = "blank"
+        tileId[i][k] = 0
+      ElseIf i = maxh - 1 And k = 2 Then 
+        tile[i][k] = "spawn"
+        tileId[i][k] = -1
+        spawn = Shapes.AddImage(fpath + "spawn.png")
+        spawnX = menusize + (k-1)*gridsize
+        spawnY = menusize + (maxh-2)*gridsize
+        Shapes.Move(spawn, spawnX, spawnY)  
+      ElseIf i = maxh - 3 And k = maxw/4 Then
+        tile[i][k] = "goal"
+        tileId[i][k] = -1
+        goal = Shapes.AddImage(fpath + "goal.png")
+        goalX = menusize + (k-1)*gridsize
+        goalY = menusize + (maxh-4)*gridsize
+        goalId1 = i
+        goalId2 = k
+        Shapes.Move(goal, goalX, goalY)  
+      EndIf
+    EndFor
+  EndFor
+  For k = 1 To maxw/4
+    tile[maxh][k] = "hardblock"
+    tileId[maxh][k] = k
+    block[k] = Shapes.AddImage(fpath + "hardblock.png")
+    blockx[k] = menusize + (k-1)*gridsize
+    blocky[k] = menusize + (maxh - 1)*gridsize
+    blockType[k] = "hardblock"
+    blockCol[k] = "none"
+    Shapes.Move(block[k], menusize + (k-1)*gridsize, menusize + (maxh/2 - 1)*gridsize)
+  EndFor 
+  blockTotal = maxw/4
+  For j = maxw/4 + 1 to maxw
+    tileId[maxh][j] = 0
+    tile[maxh][j] = "blank"
+  EndFor
+ElseIf mode = "play" Then
+  TextWindow.Clear()
+  TextWindow.Title = "LOADING"
+  TextWindow.WriteLine("PLEASE WAIT")
+  For i = 1 To 30
+    Shapes.Remove(box[i])
+    Shapes.Remove(boxCreator[i])
+    Shapes.Remove(boxName[i])
+  EndFor  
+  Shapes.Remove(menu)
+  blockTotal = 0
+  GraphicsWindow.BackgroundColor = File.ReadLine(chosenLevel,3)
+  song = File.ReadLine(chosenLevel,4)
+  curOpt = 0
+  For i = 1 To maxh
+    For k = 1 To maxw
+      char = Text.GetSubText(File.ReadLine(chosenLevel,i+4),k,1)
+      If char = "-" Then
+        tile[i][k] = "blank"
+        tileId[i][k] = 0
+      ElseIf char = "S" Then
+        tile[i][k] = "spawn"
+        tileId[i][k] = -1
+        spawn = Shapes.AddImage(fpath + "spawn.png")
+        spawnX = menusize + (k-1)*gridsize
+        spawnY = menusize + (i-1)*gridsize
+        Shapes.Move(spawn, spawnX, spawnY)  
+      ElseIf char = "G" Then
+        tile[i][k] = "goal"
+        tileId[i][k] = -1
+        goal = Shapes.AddImage(fpath + "goal.png")
+        goalX = menusize + (k-1)*gridsize
+        goalY = menusize + (i-1)*gridsize
+        goalId1 = i
+        goalId2 = k
+        Shapes.Move(goal, goalX, goalY)
+      ElseIf char = "K" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "key"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "key.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "key"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)  
+      ElseIf char = "O" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "coin"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "coin.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "coin"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)
+      ElseIf char = "*" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "coin"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "pinkcoin.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "pinkcoin"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)  
+        pinkTotal = pinkTotal + 1
+      ElseIf char = "?" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "questionblock"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "questionblock.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "questionblock"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)
+      ElseIf char = "B" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "brickblock"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "brickblock.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "brickblock"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)
+      ElseIf char = "E" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "hardblock"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "hardblock.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "hardblock"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)
+      ElseIf char = "X" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "spikeblock"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "spikeblock.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "spikeblock"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)
+      ElseIf char = "U" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "cloudblock"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "cloudblock.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "cloudblock"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)
+      ElseIf char = "D" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "donutblock"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "donutblock.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "donutblock"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)
+      ElseIf char = "I" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "iceblock"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "iceblock.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "iceblock"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)
+      ElseIf char = "Q" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "hiddenblock"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "hiddenblock.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "hiddenblock"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize) 
+      ElseIf char = "N" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "noteblock"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "noteblock.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "noteblock"
+        blockCol[blockTotal] = "none"
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)
+      ElseIf char = "P" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "pswitch"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "pswitch.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "pswitch"
+        blockCol[blockTotal] = "none"
+        switchGone[blockTotal] = 0
+        Shapes.Move(block[blockTotal], menusize + (k-1)*gridsize, menusize + (i-1)*gridsize)  
+      ElseIf char = "^" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "door1"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "door1.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "door1"
+        blockCol[blockTotal] = "none"
+        curOpt = curOpt + 1
+        doorId[blockTotal] = File.ReadLine(chosenLevel,maxh+4+curOpt)
+      ElseIf char = "V" Then
+        tile[i][k] = "door1L"
+        tileId[i][k] = tileId[i-1][k]
+      ElseIf char = "[" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "ldoor0"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "ldoor0.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "ldoor0"
+        blockCol[blockTotal] = "none"
+        curOpt = curOpt + 1
+        doorId[blockTotal] = File.ReadLine(chosenLevel,maxh+4+curOpt)
+      ElseIf char = "]" Then
+        tile[i][k] = "ldoor0L"
+        tileId[i][k] = tileId[i-1][k]  
+      ElseIf char = "(" Then
+        blockTotal = blockTotal + 1
+        tile[i][k] = "pdoor0"
+        tileId[i][k] = blockTotal
+        block[blockTotal] = Shapes.AddImage(fpath + "pdoor0.png")
+        blockx[blockTotal] = menusize + (k-1)*gridsize
+        blocky[blockTotal] = menusize + (i-1)*gridsize
+        blockType[blockTotal] = "pdoor0"
+        blockCol[blockTotal] = "none"
+        curOpt = curOpt + 1
+        doorId[blockTotal] = File.ReadLine(chosenLevel,maxh+4+curOpt)
+      ElseIf char = ")" Then
+        tile[i][k] = "pdoor0L"
+        tileId[i][k] = tileId[i-1][k]    
+      EndIf
+    EndFor
+  EndFor  
+EndIf    
+TextWindow.Hide()
+camx = 0
+camy = (Math.Round(maxh)*gridsize)  - (Math.Round(maxh/2)*gridsize)
+
+' DESIGN MODE SET-UP '
+redo:
+Sound.Stop(fpath + "Music\" + song + ".mp3")
+Shapes.Remove(counter)
+Shapes.Remove(counter2)
+Shapes.Remove(player)
+Shapes.Remove(player2)
+For i = 1 To 4
+  Shapes.Remove(anim["RunR"][i])
+  Shapes.Remove(anim["RunL"][i])
+EndFor
+Shapes.Remove(anim["TurnL"])
+Shapes.Remove(anim["TurnR"])
+Shapes.Remove(anim["JumpL"])
+Shapes.Remove(anim["JumpR"])
+Shapes.Remove(menu)
+Shapes.Remove(stopBtn)
+Shapes.ShowShape(spawn)
+For i = 1 To keyTotal
+  Shapes.Remove(key[i])
+EndFor
+For i = 1 To blockTotal
+  If coinGone[i] = 1 Then
+    Shapes.ShowShape(block[i])
+    coinGone[i] = 0
+  EndIf  
+  If blockType[i] = "pdoor0" Then
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+    Shapes.ShowShape(block[i])
+    Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+  EndIf  
+  If blockPrev[i] = "coin" And blockType[i] = "brickblock" Then
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + "coin.png")
+    Shapes.ShowShape(block[i])
+    blockType[i] = "coin"
+    Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+  EndIf
+  If blockPrev[i] = "brickblock" And blockType[i] = "coin" Then
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + "brickblock.png")
+    Shapes.ShowShape(block[i])
+    blockType[i] = "brickblock"
+    Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+  EndIf   
+  If blockType[i] = "donutblock" Then
+    Shapes.Remove(block[i])
+    fall2[i] = 0
+    fall[i] = 0
+    seconds[i] = 0
+    block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+    If firsty[i] > 0 Then
+      blocky[i] = firsty[i]
+    EndIf
+    Shapes.Move(block[i],blockx[i],blocky[i])
+  EndIf
+  If blockGone[i] = 1 Then
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+    Shapes.ShowShape(block[i])
+    blockGone[i] = 0
+    Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+  EndIf
+  If switchGone[i] = 1 Then
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+    Shapes.ShowShape(block[i])
+    switchGone[i] = 0
+    Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+  EndIf  
+  If blockType[i] = "questionblock" Or blockType[i] = "hiddenblock" Then
+    qhit[i] = "false"
+    qhit2[i] = "false"
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+    Shapes.ShowShape(block[i])
+    blockGone[i] = 0
+    Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+  EndIf
+  If blockType[i] = "ldoor0" And unlock[i] = 1 Then
+    unlock[i] = 0
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+    Shapes.Move(block[i],blockx[i],blocky[i])
+  EndIf   
+EndFor
+For i = 0 To maxw
+  GraphicsWindow.BrushColor = "White"
+  If Math.Round((i*gridsize)/width) = (i*gridsize)/width Then 
+    GraphicsWindow.BrushColor = "Gold"
+  EndIf  
+  line[1][i] = Shapes.AddRectangle(1,maxh*gridsize)
+  linex[1][i] = i*gridsize + menusize
+  liney[1][i] = menusize
+  Shapes.Move(line[1][i],linex[1][i],liney[1][i])
+EndFor
+For i = 0 To maxh
+  GraphicsWindow.BrushColor = "White"
+  If Math.Round((i*gridsize)/height) = (i*gridsize)/height Then 
+    GraphicsWindow.BrushColor = "Gold"
+  EndIf
+  line[2][i] = Shapes.AddRectangle(maxw*gridsize,1)
+  linex[2][i] = menusize
+  liney[2][i] = i*gridsize + menusize
+  Shapes.Move(line[2][i],linex[2][i],liney[2][i])
+EndFor 
+wscroll = Math.Power(width,2)/(maxw*gridsize)
+hscroll = Math.Power(height,2)/(maxh*gridsize)
+GraphicsWindow.BrushColor = "Gray"
+wscrollbar = Shapes.AddRectangle(wscroll, 10)
+hscrollbar = Shapes.AddRectangle(10, hscroll)
+'LDShapes.ZIndex(wscrollbar,100001)
+'LDShapes.ZIndex(hscrollbar,100001)
+Shapes.Move(wscrollbar, camx + menusize, height - 10 + menusize)
+Shapes.Move(hscrollbar, width - 10 + menusize, camy + menusize)
+player = Shapes.AddImage(fpath + "player.png")
+playerX = (width+screenextra)/2 - gridsize/2
+playerY = (height+screenextra)/2 - gridsize/2
+Shapes.Move(player, playerX, playerY)
+GraphicsWindow.BrushColor = "White"
+menu = Shapes.AddImage(fpath + "borderBuild.png")
+Shapes.Move(menu, 0, 0)
+playBtn = Shapes.AddImage(fpath + "play.png")
+Shapes.Move(playBtn, 0, height + menusize)
+'LDShapes.ZIndex(playBtn,100001)
+saveBtn = Shapes.AddImage(fpath + "save.png")
+Shapes.Move(saveBtn, width + menusize, 0)
+'LDShapes.ZIndex(saveBtn,100001)
+clearBtn = Shapes.AddImage(fpath + "clear.png")
+Shapes.Move(clearBtn, 5, 5)
+'LDShapes.ZIndex(clearBtn, 100001)
+eraseBtn = Shapes.AddImage(fpath + "erase.png")
+Shapes.Move(eraseBtn, 50, 5)
+bgBtn = Shapes.AddImage(fpath + "bg.png")
+Shapes.Move(bgBtn, 5, 50)
+musicBtn = Shapes.AddImage(fpath + "music.png")
+Shapes.Move(musicBtn, 50, 50)
+'LDShapes.ZIndex(eraseBtn, 100001)
+finishBtn = Shapes.AddImage(fpath + "finish.png")
+Shapes.Move(finishBtn, width + menusize, height + menusize)
+'LDShapes.ZIndex(finishBtn, 100001)
+For i = 1 To 2
+  For k = 1 To 17
+    slot[i][k] = Shapes.AddImage(fpath + "blank.png")
+    Shapes.Move(slot[i][k], menusize + 45*(k-1), 5 + 45*(i-1))
+    'LDShapes.ZIndex(slot[i][k],100001)
+  EndFor
+EndFor
+slotVar[1][1] = "coin"
+slotVar[1][2] = "pinkcoin"
+slotVar[1][3] = "key"
+slotVar[1][4] = "hardblock"
+slotVar[1][5] = "questionblock"
+slotVar[1][6] = "brickblock"
+slotVar[1][7] = "noteblock"
+slotVar[1][8] = "cloudblock"
+slotVar[1][9] = "donutblock"
+slotVar[1][10] = "iceblock"
+slotVar[1][11] = "spikeblock"
+slotVar[1][12] = "hiddenblock"
+'Firebar 1 13
+'Burner 1 14
+slotVar[1][15] = "doorIcon"
+slotVar[1][16] = "pdoorIcon"
+slotVar[1][17] = "ldoorIcon"
+'Mushroom 2 1
+'Fire Flower 2 2
+'Star 2 3
+'Goomba 2 4 'TODO!
+'Koopa 2 5
+'Bullet Bill 2 6
+'Spiny 2 7 'TODO!
+'Bob-omb 2 8
+'Boo 2 9 'TODO
+'Dry Bones 2 10
+'Thwomp 2 11 'TODO
+'Fireball 2 12 'TODO
+'Bowser 2 13
+'Checkpoint 2 14
+slotVar[2][15] = "pswitch"
+'Pipe 2 16
+'One Way Door 2 17
+
+For i = 1 To 2
+  For k = 1 To 17 
+    slotHolder[i][k] = Shapes.AddImage(fpath + slotVar[i][k] + ".png")
+    Shapes.Move(slotHolder[i][k],menusize + 4 + 45*(k-1), 5 + 4 + 45*(i-1))
+    If slotVar[i][k] <> "" Then
+      'LDShapes.ZIndex(slotHolder[i][k],100002)
+    EndIf
+  EndFor
+EndFor    
+
+' MAIN LOOP '
+
+' BUILD MODE '
+'LDShapes.ZIndex(menu,100000)
+If mode = "build" Then
+  TextWindow.Hide()
+EndIf
+While mode = "build"
+  Program.Delay(1)
+  If opTrig = 1 Then
+    opTrig = 0
+    If opType = "door1" Or opType = "ldoor0" Or opType = "pdoor0" Then
+      TextWindow.Clear()
+      TextWindow.Title = "Options"
+      TextWindow.Show()
+      TextWindow.WriteLine("Current DoorId: " + doorId[opChar])
+      TextWindow.WriteLine("Type in a number to set the DoorId.")
+      TextWindow.WriteLine("Doors with the same DoorId and Type will pair.")
+      TextWindow.WriteLine("Each DoorId only works for two doors.")
+      TextWindow.Write("Set DoorId: ")
+      doorId[opChar] = TextWindow.ReadNumber()
+      TextWindow.Hide()
+    EndIf            
+  EndIf  
+  'Update Camera positions
+  If camx + width - camLeft + camRight <= maxw * gridsize And camx - camLeft + camRight >= 0 Then
+    camx = camx - camLeft + camRight
+  EndIf
+  If camy + height - camUp + camDown <= maxh * gridsize And camy - camUp + camDown >= 0 Then  
+    camy = camy - camUp + camDown
+  EndIf 
+  
+  'Move objects (camera)
+  For i = 0 To maxw
+    Shapes.Move(line[1][i], linex[1][i] - camx, liney[1][i] - camy)
+  EndFor
+  For i = 0 To maxh
+    Shapes.Move(line[2][i], linex[2][i] - camx, liney[2][i] - camy)
+  EndFor  
+  For i = 1 To blockTotal
+    Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+  EndFor
+  Shapes.Move(wscrollbar, (width * camx)/(maxw*gridsize) + menusize, height - 10 + menusize)
+  Shapes.Move(hscrollbar, width - 10 + menusize, (height * camy)/(maxh*gridsize) + menusize)
+  
+  'Update Player positions
+  If drag <> 3 Then
+    If playerX - playerLeft + playerRight + gridsize + throwx <= width + menusize And playerX - playerLeft + playerRight + throwx >= 0 + menusize Then
+      playerX = playerX - playerLeft + playerRight + throwx
+    EndIf
+    If playerY - playerUp + playerDown + gridsize + throwy <= height + menusize And playerY - playerUp + playerDown + throwy >= 0 + menusize Then
+      playerY = playerY - playerUp + playerDown + throwy
+    EndIf
+  EndIf
+  
+  If playerX + throwx <= 0 + menusize Or playerX + gridsize + throwx >= width + menusize Then
+    throwx = -throwx 
+  EndIf 
+  If playerY + throwy <= 0 + menusize Or playerY + gridsize + throwy >= height + menusize Then
+    throwy = -throwy
+  EndIf
+  
+  If throwx > 0 Then
+    throwx = throwx - 0.1
+  EndIf  
+  If throwx < 0 Then
+    throwx = throwx + 0.1
+  EndIf
+  If throwy > 0 Then
+    throwy = throwy - 0.1
+  EndIf  
+  If throwy < 0 Then
+    throwy = throwy + 0.1
+  EndIf
+  
+  Shapes.Move(player,playerX,playerY)
+  Shapes.Move(spawn, spawnX - camx, spawnY - camy)
+  Shapes.Move(goal, goalX - camx, goalY - camy)
+EndWhile
+
+' TEST MODE VARIABLES '
+wscreens = 0
+hscreens = 0
+For i = 1 To blockTotal
+  firsty[i] = blocky[i]
+EndFor
+For i = 1 To maxh
+  For k = 1 To maxw
+    If tile[i][k] <> "blank" Then
+      If Math.Ceiling(k/24) > wscreens Then
+        wscreens = Math.Ceiling(k/24)
+      EndIf
+      If Math.Ceiling((-i/14)+2) > hscreens Then
+        hscreens = Math.Ceiling((-i/14)+3)
+      EndIf
+    EndIf
+  EndFor
+EndFor
+hscreens = 2
+' TEST MODE SET-UP '
+
+For i = 0 To maxw
+  Shapes.Remove(line[1][i])
+EndFor
+For i = 0 To maxh
+  Shapes.Remove(line[2][i])
+EndFor
+Shapes.Remove(menu)
+Shapes.Remove(wscrollbar)
+Shapes.Remove(hscrollbar)
+menuPic = ImageList.LoadImage(fpath + "borderGame.png")
+menu = Shapes.AddImage(menuPic)
+Shapes.Move(menu, 0, 0)
+stopBtn = Shapes.AddImage(fpath + "stop.png")
+Shapes.Move(stopBtn, 0, height + menusize)
+
+' TEST MODE '
+For i = 1 To 4
+  anim["RunR"][i] = Shapes.AddImage(fpath + "RunR" + i + ".png")
+  Shapes.Move(anim["RunR"][i],playerX,playerY)
+  Shapes.HideShape(anim["RunR"][i])
+EndFor
+For i = 1 To 4
+  anim["RunL"][i] = Shapes.AddImage(fpath + "RunL" + i + ".png")
+  Shapes.Move(anim["RunL"][i],playerX,playerY)
+  Shapes.HideShape(anim["RunL"][i])
+EndFor
+anim["TurnL"] = Shapes.AddImage(fpath + "TurnL.png")
+Shapes.Move(anim["TurnL"], playerX, playerY)
+Shapes.HideShape(anim["TurnL"])
+anim["TurnR"] = Shapes.AddImage(fpath + "TurnR.png")
+Shapes.Move(anim["TurnR"], playerX, playerY)
+Shapes.HideShape(anim["TurnR"])
+anim["JumpL"] = Shapes.AddImage(fpath + "JumpL.png")
+Shapes.Move(anim["JumpL"], playerX, playerY)
+Shapes.HideShape(anim["JumpL"])
+anim["JumpR"] = Shapes.AddImage(fpath + "JumpR.png")
+Shapes.Move(anim["JumpR"], playerX, playerY)
+Shapes.HideShape(anim["JumpR"])
+player2 = Shapes.AddImage(fpath + "player2.png")
+Shapes.Move(player2, playerX, playerY)
+Shapes.HideShape(player2)
+Shapes.Remove(player)
+player = Shapes.AddImage(fpath + "player.png")
+Shapes.Move(player, playerX, playerY)
+play:
+Sound.Stop(fpath + "Music\" + song + ".mp3")
+curTotal = 0
+ptimer = 0
+For i = 1 To keyTotal
+  Shapes.Remove(key[i])
+EndFor
+keyTotal = 0
+For i = 1 To blockTotal
+  seconds[i] = 0
+  fall[i] = 0
+  fall2[i] = 0
+  If blockType[i] = "hiddenblock" Then
+    Shapes.Remove(block[i])
+  EndIf  
+  If blockType[i] = "pdoor0" Then
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+    Shapes.ShowShape(block[i])
+    Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+  EndIf
+  If coinGone[i] = 1 Then
+    Shapes.ShowShape(block[i])
+    coinGone[i] = 0
+  EndIf 
+  If blockPrev[i] = "coin" And blockType[i] = "brickblock" Then
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + "coin.png")
+    Shapes.ShowShape(block[i])
+    blockType[i] = "coin"
+    Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+  EndIf
+  If blockPrev[i] = "brickblock" And blockType[i] = "coin" Then
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + "brickblock.png")
+    Shapes.ShowShape(block[i])
+    blockType[i] = "brickblock"
+    Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+  EndIf
+  If switchGone[i] = 1 Then
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+    Shapes.ShowShape(block[i])
+    switchGone[i] = 0
+    Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+  EndIf 
+  If blockType[i] = "questionblock" Or blockType[i] = "hiddenblock" Then
+    qhit[i] = "false"
+    qhit2[i] = "false"
+    blockGone[i] = 0
+    If blockType[i] = "questionblock" Then
+      Shapes.Remove(block[i])
+      block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+      Shapes.Move(block[i],blockx[i],blocky[i])
+    EndIf
+  EndIf
+  If blockType[i] = "ldoor0" And unlock[i] = 1 Then
+    unlock[i] = 0
+    Shapes.Remove(block[i])
+    block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+    Shapes.Move(block[i],blockx[i],blocky[i])
+  EndIf  
+  If blockType[i] = "donutblock" Then
+    Shapes.Remove(block[i])
+    fall2[i] = 0
+    fall[i] = 0
+    seconds[i] = 0
+    block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+    blocky[i] = firsty[i]
+    Shapes.Move(block[i],blockx[i],blocky[i])
+  EndIf  
+EndFor
+
+playerRight = 0
+playerLeft = 0
+
+playerVx = 0
+playerVy = 0
+prevVx = 0
+spaceHeld = 0
+slowVx = 2
+slowVy = 2
+maxVy = 4
+runMultiple = 1
+pmeter = 0
+ground = 0
+groundTotal = 0
+sideL = 0
+sideLTotal = 0
+sideR = 0
+sideRTotal = 0
+ceiling = 0
+ceilingTotal = 0
+const = 1
+constLimit = 0
+ice = 1
+bounce = 0
+playerScreenX = camx + (playerX-menusize)
+playerScreenY = camy + (playerY-menusize)
+leftBound = (width)/2 
+rightBound = (wscreens-1)*(maxw/10)*gridsize+(width)/2
+topBound = (height)/2
+bottomBound = (hscreens-1)*(maxh/2)*gridsize+(height)/2
+spriteSlot = 1
+r = 1
+l = 0
+Shapes.HideShape(spawn)
+Shapes.Remove(cursorPic)
+cursor = "blank"
+adjust = 8
+
+'LDShapes.ZIndex(menu,100004)
+'LDShapes.ZIndex(stopBtn,100005)
+death = 0
+win = 0
+keyTotal = 0
+pinkTrigger = 0
+If mode = "finish" Or mode = "play" Then
+  playerX = spawnX
+  playerY = spawnY - (maxh/2 * gridsize)
+  camx = 0
+  camy = 448
+EndIf
+GraphicsWindow.FontSize = 24
+GraphicsWindow.BrushColor = "Pink"
+Shapes.Remove(counter)
+counter = Shapes.AddText("Pink Coins: ")
+Shapes.Move(counter, 100, 0)
+Shapes.HideShape(counter)
+GraphicsWindow.FontSize = 24
+GraphicsWindow.BrushColor = "Blue"
+Shapes.Remove(counter2)
+counter2 = Shapes.AddText("P-Switch: ")
+Shapes.Move(counter2, 100, 100)
+Shapes.HideShape(counter2)
+Sound.Play(fpath + "Music\" + song + ".mp3")
+While (mode = "test" Or mode = "finish" Or mode = "play") And death = 0 And win = 0
+  Program.Delay(1)
+  Shapes.Move(goal, goalX - camx, goalY - camy)
+  If ptimer > 0 Then
+    Shapes.SetText(counter2, "P-Switch: " + ptimer)
+    ptimer = ptimer - 1
+  ElseIf ptimer = 0 And ptrig = 0 Then
+    Shapes.HideShape(counter2)  
+    ptrig = 1
+  EndIf  
+  If prevCoins <> curTotal And pinkTotal <> 0 Then
+    Shapes.ShowShape(counter)
+    Shapes.SetText(counter, "Pink Coins: " + (pinkTotal - curTotal))
+    prevCoins = curTotal
+  EndIf  
+  If playerX + gridsize >= goalX - camx And playerX <= goalX - camx + gridsize And playerY + gridsize >= goalY - camy And playerY <= goalY - camy + gridsize Then
+    win = 1
+  EndIf  
+  If playerY > menusize + Math.Round(maxh/2) * gridsize And ground = 0 And camy >= 448 Then
+    death = 1
+  EndIf  
+  If curTotal = pinkTotal And pinkTrigger <> 1 And pinkTotal <> 0 Then
+    pinkTrigger = 1
+    keyTotal = keyTotal + 1
+    key[keyTotal] = Shapes.AddImage(fpath + "key.png")
+    Shapes.Move(key[keyTotal],gridsize * (keyTotal-1),0)
+  EndIf  
+  prevVx = playerVx
+  playerScreenX = camx + (playerX-menusize)
+  playerScreenY = camy + (playerY-menusize)
+  groundTotal = 0
+  sideLTotal = 0
+  sideRTotal = 0
+  ceilingTotal = 0
+  ice = 1
+  bounce = 0
+  For i = 1 To blockTotal
+    testTally = 0
+    If ptimer = 499 Then
+      If blockType[i] = "pdoor0" Then
+        Shapes.Remove(block[i])
+        block[i] = Shapes.AddImage(fpath + "pdoor1.png")
+        Shapes.ShowShape(block[i])
+        Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+      EndIf
+      If blockType[i] = "brickblock" And blockPrev[i] <> "coin" Then
+        blockType[i] = "coin"
+        blockPrev[i] = "brickblock"
+        Shapes.Remove(block[i])
+        block[i] = Shapes.AddImage(fpath + "coin.png")
+        Shapes.Move(block[i], blockx[i], blocky[i])
+      ElseIf blockType[i] = "coin" And blockPrev[i] <> "brickblock" And coinGone[i] <> 1 Then
+        blockType[i] = "brickblock"
+        blockPrev[i] = "coin"
+        Shapes.Remove(block[i])
+        block[i] = Shapes.AddImage(fpath + "brickblock.png")
+        Shapes.Move(block[i], blockx[i], blocky[i])  
+      EndIf
+    ElseIf ptimer = 1 Then
+      If blockType[i] = "pdoor0" Then
+        Shapes.Remove(block[i])
+        block[i] = Shapes.AddImage(fpath + "pdoor0.png")
+        Shapes.ShowShape(block[i])
+        Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+      EndIf
+      If blockType[i] = "coin" And coinGone[i] <> 1 Then
+        blockType[i] = "brickblock"
+        Shapes.Remove(block[i])
+        block[i] = Shapes.AddImage(fpath + "brickblock.png")
+        Shapes.Move(block[i], blockx[i], blocky[i])
+      ElseIf blockType[i] = "brickblock" Then
+        blockType[i] = "coin"
+        Shapes.Remove(block[i])
+        block[i] = Shapes.AddImage(fpath + "coin.png")
+        Shapes.Move(block[i], blockx[i], blocky[i])  
+      EndIf
+    EndIf    
+    If doorTrig <> 2 And (blockType[i] = "door1" Or blockType[i] = "ldoor0" Or blockType[i] = "pdoor0") And playerUp > 0 And playerX + gridsize >= blockx[i] - camx And playerX <= blockx[i] - camx + gridsize And playerY + gridsize >= blocky[i] - camy And playerY <= blocky[i] - camy + gridsize*2 And ground = 1 Then 
+      If blockType[i] = "ldoor0" And unlock[i] <> 1 Then
+        If keyTotal > 0 Then
+          Shapes.Remove(key[keyTotal])
+          keyTotal = keyTotal - 1
+          unlock[i] = 1
+          Shapes.Remove(block[i])
+          block[i] = Shapes.AddImage(fpath + "ldoor1.png")
+          Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+          doorType = blockType[i]
+          doorChosen = doorId[i]
+          doorHit = i
+          doorTrig = 1
+        EndIf
+      ElseIf blockType[i] = "pdoor0" Then
+        If ptimer > 1 Then
+          doorType = blockType[i]
+          doorChosen = doorId[i]
+          doorHit = i
+          doorTrig = 1  
+        EndIf
+      Else
+        doorType = blockType[i]
+        doorChosen = doorId[i]
+        doorHit = i
+        doorTrig = 1
+      EndIf
+    EndIf
+    If doorTrig = 1 Then
+      If blockType[i] = doorType And doorId[i] = doorChosen And i <> doorHit Then
+        If blockType[i] = "ldoor0" And unlock[i] <> 1 Then
+          unlock[i] = 1
+          Shapes.Remove(block[i])
+          block[i] = Shapes.AddImage(fpath + "ldoor1.png")
+          Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+        EndIf
+        doorTrig = 2
+        playerX = blockx[i] - camx
+        playerY = blocky[i] - camy + gridsize       
+      EndIf
+    EndIf
+    If fall[i] = 1 Then
+      If fall2[i] < 1 Then
+        blocky[i] = blocky[i] + 1
+        If blocky[i] - camy > menusize + Math.Round(maxh/2) * gridsize Then
+          fall2[i] = 1
+          Shapes.Remove(block[i])
+        EndIf
+      Else
+        fall2[i] = fall2[i] + 1
+        If fall2[i] = 100 Then
+          fall2[i] = 0
+          fall[i] = 0
+          seconds[i] = 0
+          block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+          blocky[i] = firsty[i]
+          Shapes.Move(block[i],blockx[i],blocky[i])
+        EndIf  
+      EndIf   
+    EndIf
+    If (blockType[i] = "coin" Or blockType[i] = "pinkcoin" Or blockType[i] = "key") And coinGone[i] <> 1 Then
+      If playerX + gridsize >= blockx[i] - camx And playerX <= blockx[i] - camx + gridsize And playerY + gridsize >= blocky[i] - camy And playerY <= blocky[i] - camy + gridsize Then
+        coinGone[i] = 1
+        Shapes.HideShape(block[i])
+        If blockType[i] = "pinkcoin" Then
+          curTotal = curTotal + 1
+        EndIf
+        If blockType[i] = "key" Then
+          keyTotal = keyTotal + 1
+          key[keyTotal] = Shapes.AddImage(fpath + "key.png")
+          Shapes.Move(key[keyTotal],gridsize * (keyTotal-1),0)
+        EndIf
+      EndIf
+    EndIf
+    If (blockType[i] <> "pswitch" Or (blockType[i] = "pswitch" And switchGone[i] <> 1)) And ((blockType[i] <> "key" And blockType[i] <> "coin" And blockType[i] <> "pinkcoin") Or ((blockType[i] = "coin" Or blockType[i] = "pinkcoin" Or blockType[i] = "key") And coinGone[i] <> 1)) And (blockType[i] <> "hiddenblock" Or (blockType[i] = "hiddenblock" And qhit[i] = "true")) And blockx[i] - camx >= menusize - gridsize And blockx[i] - camx <= width + menusize And blocky[i] - camy >= menusize - gridsize And blocky[i] - camy <= height + menusize Then 
+      If blockGone[i] = 1 Then
+        If blockType[i] <> "donutblock" And blockType[i] <> "hiddenblock" And blockType[i] <> "questionblock" Then
+          block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+        ElseIf blockType[i] = "donutblock" Then
+          If fall[i] <> 1 Then
+            block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+          ElseIf fall[i] = 1 And fall2[i] <> 1 Then
+            block[i] = Shapes.AddImage(fpath + blockType[i] + "2.png") 
+          ElseIf fall[i] = 1 And fall2[i] = 1 Then  
+          EndIf
+        ElseIf blockType[i] = "hiddenblock" Then
+          If qhit2[i] = "true" Then
+            block[i] = Shapes.AddImage(fpath + "hitblock" + ".png")  
+          EndIf
+        ElseIf blockType[i] = "questionblock" Then
+          If qhit2[i] = "true" Then
+            block[i] = Shapes.AddImage(fpath + "hitblock" + ".png")
+          Else
+            block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")  
+          EndIf  
+        ElseIf blockType[i] = "ldoor0" Then
+          If unlock[i] = 1 Then 
+            block[i] = Shapes.AddImage(fpath + "ldoor1" + ".png")
+          Else
+            block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")  
+          EndIf  
+        ElseIf blockType[i] = "pdoor0" Then
+          If ptimer > 1 Then
+            block[i] = Shapes.AddImage(fpath + "pdoor1" + ".png")
+          Else
+            block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")  
+          EndIf
+        EndIf
+        Shapes.ShowShape(block[i])
+        blockGone[i] = 0
+      EndIf
+      If blockx[i] - camx >= 0 And blockx[i] - camx + gridsize <= GraphicsWindow.Width And blocky[i] - camy >= 0 And blocky[i] - camy + 16 <= GraphicsWindow.Height And (Shapes.GetLeft(block[i]) <> blockx[i] - camx Or Shapes.GetTop(block[i]) <> blocky[i] - camy) Then
+        Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+      EndIf
+    ElseIf blockGone[i] <> 1 Then
+      blockGone[i] = 1
+      Shapes.HideShape(block[i])
+      Shapes.Remove(block[i])
+    EndIf
+    If (blockType[i] <> "pswitch" Or (blockType[i] = "pswitch" And switchGone[i] <> 1)) And blockType[i] <> "door1" And blockType[i] <> "ldoor0" And blockType[i] <> "pdoor0" And blockType[i] <> "key" And blockType[i] <> "coin" And blockType[i] <> "pinkcoin" And (blockType[i] <> "hiddenblock" Or (blockType[i] = "hiddenblock" And qhit[i] = "true")) And (blockCol[i] = "none" Or blockCol[i] = "ground") And playerY + gridsize - 1 <= blocky[i] - camy And playerVy >= 0 And playerY + playerVy <= blocky[i] - camy + 1 And playerY + gridsize + playerVy >= blocky[i] - camy + 1 And playerX < blockx[i] - camx + gridsize - 1 And playerX + gridsize > blockx[i] - camx + 1 Then
+      If blocky[i] - camy + 1 - (playerY + gridsize) > 0 And bounce = 0 Then
+        playerVy = blocky[i] - camy + 1 - (playerY + gridsize)
+      ElseIf bounce = 0 Then
+        playerVy = 0
+      EndIf
+      blockCol[i] = "ground"
+      groundTotal = 1
+      testTally = testTally + 1
+      If blockType[i] = "pswitch" Then
+        ptimer = 500
+        ptrig = 0
+        Shapes.ShowShape(counter2)
+        switchGone[i] = 1
+        Shapes.Remove(block[i])
+      EndIf  
+      If blockType[i] = "iceblock" Then
+        ice = 0.175
+      EndIf
+      If blockType[i] = "noteblock" And playerX < blockx[i] - camx + gridsize - 16 And playerX + gridsize > blockx[i] - camx + 16 Then
+        bounce = 1
+      EndIf
+      If blockType[i] = "donutblock" And playerX < blockx[i] - camx + gridsize - 16 And playerX + gridsize > blockx[i] - camx + 16 Then
+        If seconds[i] = 0 Then
+          Shapes.Remove(block[i])
+          block[i] = Shapes.AddImage(fpath + blockType[i] + "2.png")
+          Shapes.Move(block[i],blockx[i],blocky[i])
+        EndIf
+        If seconds[i] < 50 Then  
+          seconds[i] = seconds[i] + 1
+        ElseIf fall[i] <> 1 Then
+          firsty[i] = blocky[i]
+          fall[i] = 1  
+        EndIf
+      EndIf
+    EndIf 
+    If (blockType[i] <> "pswitch" Or (blockType[i] = "pswitch" And switchGone[i] <> 1)) And blockType[i] <> "door1" And blockType[i] <> "ldoor0" And blockType[i] <> "pdoor0" And blockType[i] <> "key" And blockType[i] <> "coin" And blockType[i] <> "pinkcoin" And (blockType[i] <> "hiddenblock" Or (blockType[i] = "hiddenblock" And qhit[i] <> "true" And playerVy < 0 And playerY > blocky[i] - camy + gridsize/2) Or (blockType[i] = "hiddenblock" And qhit[i] = "true")) And (blockCol[i] = "none" Or blockCol[i] = "ceiling") And blockType[i] <> "cloudblock" And blockType[i] <> "donutblock" And playerY + playerVy <= blocky[i] + gridsize - camy - 1 And playerY + gridsize + playerVy >= blocky[i] + gridsize - camy - 1 And playerX < blockx[i] - camx + gridsize - 1 And playerX + gridsize > blockx[i] - camx + 1 Then
+      If blocky[i] - camy + gridsize - 1 - playerY < 0 And groundTotal = 0 Then
+        playerVy = blocky[i] - camy + gridsize - 1 - (playerY) 
+      ElseIf groundTotal = 0 Then
+        playerVy = playerVy + 0.25
+      EndIf
+      blockCol[i] = "ceiling"
+      ceilingTotal = 1
+      testTally = testTally + 1  
+      If (blockType[i] = "questionblock" Or blockType[i] = "hiddenblock") And qhit[i] <> "true" Then
+        qhit[i] = "true"
+        qtally[i] = 0
+        If blockType[i] = "hiddenblock" Then
+          block[i] = Shapes.AddImage(fpath + "questionblock.png")
+          Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+        EndIf
+      EndIf 
+    EndIf   
+    If (blockType[i] <> "pswitch" Or (blockType[i] = "pswitch" And switchGone[i] <> 1)) And blockType[i] <> "door1" And blockType[i] <> "ldoor0" And blockType[i] <> "pdoor0" And blockType[i] <> "key" And blockType[i] <> "coin" And blockType[i] <> "pinkcoin" And (blockCol[i] = "none" Or blockCol[i] = "left") And blockType[i] <> "cloudblock" And blockType[i] <> "donutblock" And (blockType[i] <> "hiddenblock" Or (blockType[i] = "hiddenblock" And qhit[i] = "true")) And playerVx*runMultiple*Math.Floor((pmeter/100) + 1) >= 0 And playerX + playerVx*runMultiple*Math.Floor((pmeter/100) + 1) <= blockx[i] - camx + 1 And playerX + gridsize + playerVx*runMultiple*Math.Floor((pmeter/100) + 1) >= blockx[i] - camx + 1 And playerY < blocky[i] - camy + gridsize - 1 And playerY + gridsize > blocky[i] - camy + 1 And sideLTotal = 0 Then
+      playerX = playerX + (blockx[i] - camx + 1 - (playerX + gridsize))
+      blockCol[i] = "left"
+      playerVx = 0
+      sideLTotal = 1
+      testTally = testTally + 1 
+    EndIf
+    If (blockType[i] <> "pswitch" Or (blockType[i] = "pswitch" And switchGone[i] <> 1)) And blockType[i] <> "door1" And blockType[i] <> "ldoor0" And blockType[i] <> "pdoor0" And blockType[i] <> "key" And blockType[i] <> "coin" And blockType[i] <> "pinkcoin" And (blockCol[i] = "none" Or blockCol[i] = "right") And blockType[i] <> "cloudblock" And blockType[i] <> "donutblock" And (blockType[i] <> "hiddenblock" Or (blockType[i] = "hiddenblock" And qhit[i] = "true")) And playerVx*runMultiple*Math.Floor((pmeter/100) + 1) <= 0 And playerX + playerVx*runMultiple*Math.Floor((pmeter/100) + 1) >= blockx[i] - camx + 1 And playerX + playerVx*runMultiple*Math.Floor((pmeter/100) + 1) <= blockx[i] + gridsize - camx - 1 And playerY < blocky[i] - camy + gridsize - 1 And playerY + gridsize > blocky[i] - camy + 1 And sideRTotal = 0 Then
+      playerX = playerX - ((playerX) - (blockx[i] + gridsize - camx - 1))
+      blockCol[i] = "right"
+      playerVx = 0
+      sideRTotal = 1
+      testTally = testTally + 1  
+    EndIf
+    If blockCol[i] <> "none" And testTally = 0 Then
+      blockCol[i] = "none"
+    EndIf
+    If blockCol[i] <> "none" And blockType[i] = "spikeblock" Then
+      death = 1
+    EndIf
+    If fall[i] <> 1 And blockType[i] = "donutblock" And blockCol[i] = "none" And seconds[i] > 0 Then
+      Shapes.Remove(block[i])
+      block[i] = Shapes.AddImage(fpath + blockType[i] + ".png")
+      Shapes.Move(block[i],blockx[i],blocky[i])
+      seconds[i] = 0
+    EndIf
+    If qhit[i] = "true" And qhit2[i] <> "true" Then
+      If qtally[i] < 5 Then
+        qtally[i] = qtally[i] + 1
+        Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy - qtally[i])
+      EndIf
+      If qtally[i] < 10 Then
+        qtally[i] = qtally[i] + 1
+        Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy - 5 + (qtally[i]-5))
+      EndIf 
+      If qtally[i] = 10 Then
+        qhit2[i] = "true"
+        Shapes.Remove(block[i])
+        block[i] = Shapes.AddImage(fpath + "hitblock.png")
+        Shapes.Move(block[i], blockx[i] - camx, blocky[i] - camy)
+      EndIf 
+    EndIf
+  EndFor
+  If groundTotal <> 0 Then
+    ground = 1
+    constLimit = 0
+    const = 1
+    If bounce = 1 Then
+      playerVy = -8 - 4*space
+    EndIf
+  Else
+    ground = 0  
+    If constLimit = 0 Then
+      constLimit = 1
+      const = runMultiple*Math.Floor((pmeter/100) + 1)
+    EndIf
+  EndIf
+  If ceilingTotal <> 0 Then
+    ceiling = 1
+  Else
+    ceiling = 0  
+  EndIf 
+  If sideLTotal = 1 Then
+    sideL = 1
+  Else
+    sideL = 0  
+  EndIf 
+  If sideRTotal = 1 Then
+    sideR = 1
+  Else
+    sideR = 0  
+  EndIf 
+  If ground = 0 And spaceHeld = 1 And ceiling = 0 And playerVy > -8 - Math.Floor(pmeter/100) Then 
+    playerVy = playerVy - 1
+  ElseIf ground = 0 Then
+    spaceHeld = 0
+    playerVy = playerVy + 0.25
+  EndIf  
+  If playerRight - playerLeft = playerVx Then
+    If playerRight - playerLeft = 0 And ground = 0 Then
+    ElseIf (sideL = 0 And sideR = 0) Or (sideL = 0 And sideR = 1 And playerRight-playerLeft > 0) Or (sideL = 1 And sideR = 0 And playerRight-playerLeft < 0) Then  
+      playerVx = playerRight - playerLeft
+    EndIf
+  ElseIf playerRight - playerLeft < playerVx Then  
+    If playerRight - playerLeft = 0 And ground = 0 Then
+    ElseIf (sideL = 0 And sideR = 0) Or (sideL = 0 And sideR = 1 And playerRight-playerLeft > 0) Or (sideL = 1 And sideR = 0 And playerRight-playerLeft < 0) Then    
+      playerVx = playerVx - 0.1*ice
+    EndIf
+  ElseIf playerRight - playerLeft > playerVx Then
+    If playerRight - playerLeft = 0 And ground = 0 Then
+    ElseIf (sideL = 0 And sideR = 0) Or (sideL = 0 And sideR = 1 And playerRight-playerLeft > 0) Or (sideL = 1 And sideR = 0 And playerRight-playerLeft < 0) Then        
+      playerVx = playerVx + 0.1*ice  
+    EndIf
+  EndIf  
+  If playerX <= menusize + width/2 And playerX + gridsize >= menusize + width/2 And playerScreenX <= rightBound And playerScreenX >= leftBound Then  
+    If ground = 1 Then
+      camx = camx + ((playerVx)*runMultiple*Math.Floor((pmeter/100) + 1)) 
+    Else  
+      camx = camx + ((playerVx)*const)
+    EndIf
+  ElseIf playerScreenX <= rightBound And playerScreenX >= leftBound Then
+    If playerX >= menusize + width/2 Then
+      If ground = 1 Then
+        camx = camx + ((playerVx)*runMultiple*Math.Floor((pmeter/100) + 1)) + adjust
+        playerX = playerX - ((playerVx)*runMultiple*Math.Floor((pmeter/100) + 1)) - adjust
+      Else
+        camx = camx + ((playerVx)*const) + adjust
+        playerX = playerX - ((playerVx)*const) - adjust
+      EndIf
+    Else
+      If ground = 1 Then
+        camx = camx + ((playerVx)*runMultiple*Math.Floor((pmeter/100) + 1)) - adjust
+        playerX = playerX - ((playerVx)*runMultiple*Math.Floor((pmeter/100) + 1)) + adjust
+      Else
+        camx = camx + ((playerVx)*const) + adjust
+        playerX = playerX - ((playerVx)*const) - adjust
+      EndIf
+    EndIf
+    If camx < 0 Then
+      camx = 0
+    EndIf  
+    If camx > (wscreens-1)*gridsize*(maxw/10) Then
+      camx = (wscreens-1)*gridsize*(maxw/10)
+    EndIf 
+  Else
+    If ground = 1 Then
+      playerX = playerX + ((playerVx)*runMultiple*Math.Floor((pmeter/100) + 1))
+    Else
+      playerX = playerX + ((playerVx)*const)
+    EndIf
+    If camx < 0 Then
+      camx = 0
+    EndIf  
+    If camx > (wscreens-1)*gridsize*(maxw/10) Then
+      camx = (wscreens-1)*gridsize*(maxw/10)
+    EndIf  
+  EndIf     
+  If runMultiple = 1 Or sideL = 1 Then
+    pmeter = 0
+  ElseIf runMultiple = 2 And (playerVx)*runMultiple*Math.Floor((pmeter/100) + 1) <> 0 And pmeter < 100 And playerRight - playerLeft = playerVx Then
+    pmeter = pmeter + 0.5
+  ElseIf pmeter > 0 And runMultiple = 2 And playerVx <> playerRight - playerLeft Then
+    pmeter = pmeter - 0.5
+  EndIf  
+  
+  If playerVy > 0 And ground = 0 And playerY <= menusize + height/2 And playerY + gridsize >= menusize + height/2 And playerScreenY <= bottomBound And playerScreenY >= topBound Then  
+    camy = camy + (playerVy)
+    If camy < 0 Then
+      camy = 0
+      playerY = playerY + (playerVy)
+    EndIf  
+    If camy > (hscreens-1)*gridsize*(maxh/2) Then
+      camy = (hscreens-1)*gridsize*(maxh/2)
+      playerY = playerY + (playerVy)
+    EndIf
+  ElseIf playerScreenY <= bottomBound And playerScreenY >= topBound And ground = 1 And (playerY > menusize + height/2 Or playerY + gridsize < menusize + height/2) Then
+    If playerY < menusize + height/2 And ground = 1 Then
+      camy = camy - adjust
+    ElseIf ground = 1 Then
+      camy = camy + adjust
+    EndIf
+    If playerY < menusize + height/2 And ground = 1 Then
+      playerY = playerY + playerVy + adjust
+    ElseIf ground = 1 Then
+      playerY = playerY + playerVy - adjust
+    EndIf
+    If camy < 0 Then
+      camy = 0
+    EndIf  
+    If camy > (hscreens-1)*gridsize*(maxh/2) Then
+      camy = (hscreens-1)*gridsize*(maxh/2)
+    EndIf 
+  Else
+    playerY = playerY + playerVy
+    If camy < 0 Then
+      camy = 0
+    EndIf  
+    If camy > (hscreens-1)*gridsize*(maxh/2) Then
+      camy = (hscreens-1)*gridsize*(maxh/2)
+    EndIf  
+  EndIf   
+  If playerVx > 0 And prevVx > 0 And (r = 1 Or playerRight - playerLeft > 0) And ground = 1 And sideL = 0 Then
+    r = 1
+    l = 0
+    If song = "Young\Billie Jean" And gHeld = 1 Then
+      runLeft()
+    Else 
+      runRight() 
+    EndIf
+  EndIf
+  If playerVx < 0 And prevVx < 0 And (l = 1 Or playerRight - playerLeft < 0) And ground = 1 And sideR = 0 Then
+    r = 0
+    l = 1
+    If song = "Young\Billie Jean" And gHeld = 1 Then
+      runRight()
+    Else 
+      runLeft() 
+    EndIf
+  EndIf 
+  If ((playerVx = 0 And (prevVx > 0 Or r = 1) And (playerRight - playerLeft = 0)) Or (playerRight - playerLeft > 0 And sideL = 1)) And ground = 1 Then
+    r = 1
+    l = 0
+    If song = "Young\Billie Jean" And gHeld = 1 Then
+      standLeft()
+    Else 
+      standRight() 
+    EndIf
+  EndIf
+  If ((playerVx = 0 And (prevVx < 0 Or l = 1) And (playerRight - playerLeft = 0)) Or (playerRight - playerLeft < 0 And sideR = 1)) And ground = 1 Then
+    r = 0
+    l = 1
+    If song = "Young\Billie Jean" And gHeld = 1 Then
+      standRight()
+    Else 
+      standLeft() 
+    EndIf
+  EndIf  
+  If playerVx > 0 And playerRight - playerLeft < 0 And ground = 1 And sideR = 0 Then
+    r = 0
+    l = 1
+    If song = "Young\Billie Jean" And gHeld = 1 Then
+      turnRight()
+    Else 
+      turnLeft() 
+    EndIf
+  EndIf
+  If playerVx < 0 And playerRight - playerLeft > 0 And ground = 1 And sideL = 0 Then
+    r = 1
+    l = 0
+    If song = "Young\Billie Jean" And gHeld = 1 Then
+      turnLeft()
+    Else 
+      turnRight() 
+    EndIf
+  EndIf  
+  If spaceHeld = 1 And (prevVx > 0 Or r = 1) And ground = 0 Then
+    If song = "Young\Billie Jean" And gHeld = 1 Then
+      jumpLeft()
+    Else 
+      jumpRight() 
+    EndIf
+  EndIf
+  If spaceHeld = 1 And (prevVx < 0 Or l = 1) And ground = 0 Then
+    If song = "Young\Billie Jean" And gHeld = 1 Then
+      jumpRight()
+    Else 
+      jumpLeft() 
+    EndIf
+  EndIf  
+  Shapes.Move(player, playerX, playerY)
+  Shapes.Move(player2, playerX, playerY)
+  Shapes.Move(anim["TurnL"],playerX,playerY)
+  Shapes.Move(anim["TurnR"],playerX,playerY)
+  Shapes.Move(anim["JumpL"],playerX,playerY)
+  Shapes.Move(anim["JumpR"],playerX,playerY)
+  For i = 1 To 4
+    Shapes.Move(anim["RunR"][i], playerX, playerY)
+  EndFor
+  For i = 1 To 4
+    Shapes.Move(anim["RunL"][i], playerX, playerY)
+  EndFor  
+EndWhile
+If death = 1 Then
+  Program.Delay(1000)
+  death = 0
+  If mode = "test" Then
+    mode = "build"
+  ElseIf mode = "finish" Or mode = "play" Then
+    Goto play  
+  EndIf
+EndIf
+If win = 1 Then
+  Program.Delay(1000)
+  win = 0
+  If mode = "test" Then
+    mode = "build"
+  ElseIf mode = "finish" Then
+    mode = "publish"
+  ElseIf mode = "play" Then
+    Goto start  
+  EndIf
+EndIf
+
+If mode = "build" Then
+  Goto redo
+EndIf
+
+If mode = "REDO" Then
+  Goto start
+EndIf
+
+'PUBLISH TIME'
+release:
+trig = 0
+name = ""
+curOpt = 0
+While mode = "publish"
+  If trig = 0 Then
+    trig = 1
+    TextWindow.Clear()
+    TextWindow.Title = "Upload Level"
+    TextWindow.Show()
+    TextWindow.WriteLine("Congrats, you beat your level! Time to upload!")
+    TextWindow.Write("Name your level: ")
+    name = TextWindow.Read()
+    If name <> "" Then
+      check = File.ReadContents(fpath + "\Levels\Play\" + curUser + "\" + name + ".txt")
+      If check = "" Then
+        TextWindow.WriteLine("PLEASE WAIT")
+        If Array.ContainsValue(File.GetDirectories(fpath + "\Levels\Play\"),curUser) = "False" Then
+          File.CreateDirectory(fpath + "\Levels\Play\" + curUser) 
+        EndIf
+        File.InsertLine(fpath + "\Levels\Play\" + curUser + "\" + name + ".txt",1,name)
+        File.InsertLine(fpath + "\Levels\Play\" + curUser + "\" + name + ".txt",2,curUser)
+        File.InsertLine(fpath + "\Levels\Play\" + curUser + "\" + name + ".txt",3,GraphicsWindow.BackgroundColor)
+        File.InsertLine(fpath + "\Levels\Play\" + curUser + "\" + name + ".txt",4,song)
+        For i = 1 To maxh
+          TextWindow.WriteLine("PROGRESS: " + i + "/" + maxh)
+          tag = ""
+          For k = 1 To maxw
+            char = "#"
+            If tile[i][k] = "blank" Then
+              char = "-"
+            ElseIf tile[i][k] = "spawn" Then
+              char = "S"
+            ElseIf tile[i][k] = "goal" Then
+              char = "G"
+            ElseIf tile[i][k] = "key" Then
+              char = "K"  
+            ElseIf tile[i][k] = "coin" Then
+              char = "O"
+            ElseIf tile[i][k] = "pinkcoin" Then
+              char = "*"  
+            ElseIf tile[i][k] = "questionblock" Then
+              char = "?"
+            ElseIf tile[i][k] = "brickblock" Then
+              char = "B"
+            ElseIf tile[i][k] = "hardblock" Then
+              char = "E"
+            ElseIf tile[i][k] = "spikeblock" Then
+              char = "X"
+            ElseIf tile[i][k] = "cloudblock" Then
+              char = "U"
+            ElseIf tile[i][k] = "donutblock" Then
+              char = "D"
+            ElseIf tile[i][k] = "iceblock" Then
+              char = "I"
+            ElseIf tile[i][k] = "hiddenblock" Then
+              char = "Q"  
+            ElseIf tile[i][k] = "noteblock" Then
+              char = "N"  
+            ElseIf tile[i][k] = "pswitch" Then
+              char = "P"  
+            ElseIf tile[i][k] = "door1" Then
+              char = "^"
+              curOpt = curOpt + 1
+              If doorId[tileId[i][k]] <> "" Then
+                char2 = doorId[tileId[i][k]] 
+              Else
+                char2 = "0"  
+              EndIf
+              File.InsertLine(fpath + "\Levels\Play\" + curUser + "\" + name + ".txt",maxh + 4 + curOpt,char2)
+            ElseIf tile[i][k] = "door1L" Then  
+              char = "V"
+            ElseIf tile[i][k] = "pdoor0" Then
+              char = "("
+              curOpt = curOpt + 1
+              If doorId[tileId[i][k]] <> "" Then
+                char2 = doorId[tileId[i][k]] 
+              Else
+                char2 = "0"  
+              EndIf
+              File.InsertLine(fpath + "\Levels\Play\" + curUser + "\" + name + ".txt",maxh + 4 + curOpt,char2)
+            ElseIf tile[i][k] = "pdoor0L" Then  
+              char = ")"  
+            ElseIf tile[i][k] = "ldoor0" Then
+              char = "["
+              curOpt = curOpt + 1
+              If doorId[tileId[i][k]] <> "" Then
+                char2 = doorId[tileId[i][k]] 
+              Else
+                char2 = "0"  
+              EndIf
+              File.InsertLine(fpath + "\Levels\Play\" + curUser + "\" + name + ".txt",maxh + 4 + curOpt,char2)
+            ElseIf tile[i][k] = "ldoor0L" Then  
+              char = "]"  
+            EndIf
+            tag = tag + char
+          EndFor
+          File.InsertLine(fpath + "\Levels\Play\" + curUser + "\" + name + ".txt",i + 4,tag)
+        EndFor
+        TextWindow.WriteLine("SUCCESS")
+        TextWindow.Pause()
+        TextWindow.Hide()
+        mode = "menu"
+        Goto start
+      Else
+        GraphicsWindow.ShowMessage("There is already a level with this tile.","ERROR")
+        Goto release  
+      EndIf
+    Else
+      Goto release
+    EndIf
+  EndIf  
+EndWhile  
+
+' SPRITE ANIM '
+Sub runRight
+  Shapes.HideShape(player)
+  Shapes.HideShape(player2)
+  Shapes.HideShape(anim["TurnL"])
+  Shapes.HideShape(anim["TurnR"])
+  Shapes.HideShape(anim["JumpL"])
+  Shapes.HideShape(anim["JumpR"])
+  Shapes.ShowShape(anim["RunR"][Math.Ceiling((spriteSlot*runMultiple)*Math.Floor((pmeter/100) + 1)/20)])
+  For i = 1 To 4
+    If i <> Math.Ceiling((spriteSlot*runMultiple)*Math.Floor((pmeter/100) + 1)/20) Then
+      Shapes.HideShape(anim["RunR"][i])
+    EndIf  
+    Shapes.HideShape(anim["RunL"][i])
+  EndFor
+  spriteSlot = spriteSlot + 1
+  If spriteSlot >= 4*(20/(runMultiple*Math.Floor((pmeter/100) + 1))) Then
+    spriteSlot = 1
+  EndIf  
+EndSub  
+
+Sub runLeft
+  Shapes.HideShape(player)
+  Shapes.HideShape(player2)
+  Shapes.HideShape(anim["TurnL"])
+  Shapes.HideShape(anim["TurnR"])
+  Shapes.HideShape(anim["JumpL"])
+  Shapes.HideShape(anim["JumpR"])
+  Shapes.ShowShape(anim["RunL"][Math.Ceiling((spriteSlot*runMultiple)*Math.Floor((pmeter/100) + 1)/20)])
+  For i = 1 To 4
+    If i <> Math.Ceiling((spriteSlot*runMultiple)*Math.Floor((pmeter/100) + 1)/20) Then
+      Shapes.HideShape(anim["RunL"][i])
+    EndIf  
+    Shapes.HideShape(anim["RunR"][i])
+  EndFor
+  spriteSlot = spriteSlot + 1
+  If spriteSlot >= 4*(20/(runMultiple*Math.Floor((pmeter/100) + 1))) Then
+    spriteSlot = 1
+  EndIf  
+EndSub
+
+Sub standLeft
+  For i = 1 To 4
+    Shapes.HideShape(anim["RunL"][i]) 
+    Shapes.HideShape(anim["RunR"][i])
+  EndFor
+  Shapes.HideShape(player)
+  Shapes.HideShape(anim["TurnL"])
+  Shapes.HideShape(anim["TurnR"])
+  Shapes.HideShape(anim["JumpL"])
+  Shapes.HideShape(anim["JumpR"])
+  Shapes.ShowShape(player2)
+EndSub  
+
+Sub standRight
+  For i = 1 To 4
+    Shapes.HideShape(anim["RunL"][i]) 
+    Shapes.HideShape(anim["RunR"][i])
+  EndFor
+  Shapes.HideShape(player2)
+  Shapes.HideShape(anim["TurnL"])
+  Shapes.HideShape(anim["TurnR"])
+  Shapes.HideShape(anim["JumpL"])
+  Shapes.HideShape(anim["JumpR"])
+  Shapes.ShowShape(player)
+EndSub 
+
+Sub turnLeft
+  For i = 1 To 4
+    Shapes.HideShape(anim["RunL"][i]) 
+    Shapes.HideShape(anim["RunR"][i])
+  EndFor
+  Shapes.HideShape(player)
+  Shapes.HideShape(player2)
+  Shapes.HideShape(anim["TurnR"])
+  Shapes.HideShape(anim["JumpL"])
+  Shapes.HideShape(anim["JumpR"])
+  Shapes.ShowShape(anim["TurnL"])
+EndSub
+
+Sub turnRight
+  For i = 1 To 4
+    Shapes.HideShape(anim["RunL"][i]) 
+    Shapes.HideShape(anim["RunR"][i])
+  EndFor
+  Shapes.HideShape(player)
+  Shapes.HideShape(player2)
+  Shapes.HideShape(anim["TurnL"])
+  Shapes.HideShape(anim["JumpL"])
+  Shapes.HideShape(anim["JumpR"])
+  Shapes.ShowShape(anim["TurnR"])
+EndSub
+
+Sub jumpLeft
+  For i = 1 To 4
+    Shapes.HideShape(anim["RunL"][i]) 
+    Shapes.HideShape(anim["RunR"][i])
+  EndFor
+  Shapes.HideShape(player)
+  Shapes.HideShape(player2)
+  Shapes.HideShape(anim["TurnL"])
+  Shapes.HideShape(anim["TurnR"])
+  Shapes.HideShape(anim["JumpR"])
+  Shapes.ShowShape(anim["JumpL"])
+EndSub
+
+Sub jumpRight
+  For i = 1 To 4
+    Shapes.HideShape(anim["RunL"][i]) 
+    Shapes.HideShape(anim["RunR"][i])
+  EndFor
+  Shapes.HideShape(player)
+  Shapes.HideShape(player2)
+  Shapes.HideShape(anim["TurnL"])
+  Shapes.HideShape(anim["TurnR"])
+  Shapes.HideShape(anim["JumpL"])
+  Shapes.ShowShape(anim["JumpR"])
+EndSub
+
+' EVENTS '
+Sub KeyDownEvent
+  If mode = "build" Then
+    If GraphicsWindow.LastKey = "O" Then
+      TextWindow.Clear()
+      TextWindow.Title = "Set Background"
+      TextWindow.Show()
+      TextWindow.Write("Enter new background color here: ")
+      bg = TextWindow.Read()
+      GraphicsWindow.BackgroundColor = bg
+      TextWindow.Hide()
+    EndIf  
+    If GraphicsWindow.LastKey = "Left" Then
+      camLeft = scroll
+    EndIf
+    If GraphicsWindow.LastKey = "Right" Then
+      camRight = scroll
+    EndIf
+    If GraphicsWindow.LastKey = "Up" Then
+      camUp = scroll
+    EndIf
+    If GraphicsWindow.LastKey = "Down" Then
+      camDown = scroll
+    EndIf
+    
+    If GraphicsWindow.LastKey = "A" Then
+      playerLeft = scroll
+    EndIf
+    If GraphicsWindow.LastKey = "D" Then
+      playerRight = scroll
+    EndIf
+    If GraphicsWindow.LastKey = "W" Then
+      playerUp = scroll
+    EndIf
+    If GraphicsWindow.LastKey = "S" Then
+      playerDown = scroll
+    EndIf
+  ElseIf mode = "test" Or mode = "finish" Or mode = "play" Then
+    If GraphicsWindow.LastKey = "LeftShift" Then
+      runMultiple = 2
+    EndIf  
+    If GraphicsWindow.LastKey = "A" Or GraphicsWindow.LastKey = "Left" Then
+      playerLeft = slowVx
+    EndIf
+    If GraphicsWindow.LastKey = "D" Or GraphicsWindow.LastKey = "Right" Then
+      playerRight = slowVx
+    EndIf
+    If GraphicsWindow.LastKey = "W" Or GraphicsWindow.LastKey = "Up" Then
+      playerUp = 1
+    EndIf
+    If GraphicsWindow.LastKey = "Space" And ground = 1 Then 
+      spaceHeld = 1
+      If ceiling = 0 Then 
+        playerVy = -1 - Math.Floor(pmeter/100)
+      EndIf  
+    EndIf  
+    If GraphicsWindow.LastKey = "Space" Then
+      space = 1
+    EndIf
+    If GraphicsWindow.LastKey = "G" Then
+      gHeld = 1
+    EndIf
+  EndIf  
+EndSub  
+
+Sub KeyUpEvent
+  If mode = "build" Then
+    If GraphicsWindow.LastKey = "F5" Then
+      mode = "test"
+    EndIf  
+    
+    If GraphicsWindow.LastKey = "Left" Then
+      camLeft = 0
+    EndIf
+    If GraphicsWindow.LastKey = "Right" Then
+      camRight = 0
+    EndIf
+    If GraphicsWindow.LastKey = "Up" Then
+      camUp = 0
+    EndIf
+    If GraphicsWindow.LastKey = "Down" Then
+      camDown = 0
+    EndIf
+    
+    If GraphicsWindow.LastKey = "A" Then
+      playerLeft = 0
+    EndIf
+    If GraphicsWindow.LastKey = "D" Then
+      playerRight = 0
+    EndIf
+    If GraphicsWindow.LastKey = "W" Then
+      playerUp = 0
+    EndIf
+    If GraphicsWindow.LastKey = "S" Then
+      playerDown = 0
+    EndIf 
+  ElseIf mode = "test" Or mode = "finish" Or mode = "play" Then
+    If GraphicsWindow.LastKey = "F5" Then
+      mode = "build"
+    EndIf
+    If GraphicsWindow.LastKey = "LeftShift" Then
+      runMultiple = 1
+    EndIf  
+    If GraphicsWindow.LastKey = "A" Or GraphicsWindow.LastKey = "Left" Then
+      playerLeft = 0
+    EndIf
+    If GraphicsWindow.LastKey = "D" Or GraphicsWindow.LastKey = "Right" Then
+      playerRight = 0
+    EndIf
+    If GraphicsWindow.LastKey = "W" Or GraphicsWindow.LastKey = "Up" Then
+      playerUp = 0
+      If doorTrig = 2 Then
+        doorTrig = 0
+      EndIf  
+    EndIf
+    If GraphicsWindow.LastKey = "Space" Then 
+      spaceHeld = 0
+      space = 0
+    EndIf    
+    If GraphicsWindow.LastKey = "G" Then
+      gHeld = 0
+    EndIf  
+  EndIf  
+EndSub  
+
+Sub MouseDownEvent
+  If mode = "menu" Then
+    If playo = 3 Then
+      For i = 1 To 30
+        If GraphicsWindow.MouseX >= Shapes.GetLeft(box[i]) And GraphicsWindow.MouseX <= Shapes.GetLeft(box[i]) + 135 And GraphicsWindow.MouseY >= Shapes.GetTop(box[i]) And GraphicsWindow.MouseY <= Shapes.GetTop(box[i]) + 70 Then
+          If boxLevel[i] <> "" Then
+            chosenLevel = boxLevel[i]
+            mode = "play"
+          EndIf
+        EndIf
+      EndFor  
+    EndIf  
+    If playo = 0 And GraphicsWindow.MouseX >= Shapes.GetLeft(menuBtn3) And GraphicsWindow.MouseX <= Shapes.GetLeft(menuBtn3) + 100 And GraphicsWindow.MouseY >= Shapes.GetTop(menuBtn3) And GraphicsWindow.MouseY <= Shapes.GetTop(menuBtn3) + 100 Then
+      If curUser <> "" Then
+        playo = 1
+      Else
+        GraphicsWindow.ShowMessage("You must log in or create a user first!", "Error")
+      EndIf
+    EndIf  
+    If playo = 0 And GraphicsWindow.MouseX >= Shapes.GetLeft(menuBtn1) And GraphicsWindow.MouseX <= Shapes.GetLeft(menuBtn1) + 100 And GraphicsWindow.MouseY >= Shapes.GetTop(menuBtn1) And GraphicsWindow.MouseY <= Shapes.GetTop(menuBtn1) + 100 Then
+      If curUser <> "" Then
+        mode = "build"
+      Else
+        GraphicsWindow.ShowMessage("You must log in or create a user first!", "Error")
+      EndIf  
+    EndIf
+    If playo = 3 And GraphicsWindow.MouseX >= Shapes.GetLeft(menuBtn4) And GraphicsWindow.MouseX <= Shapes.GetLeft(menuBtn4) + 100 And GraphicsWindow.MouseY >= Shapes.GetTop(menuBtn4) And GraphicsWindow.MouseY <= Shapes.GetTop(menuBtn4) + 100 Then
+      startTrig = 1
+    EndIf  
+    If playo = 0 And GraphicsWindow.MouseX >= Shapes.GetLeft(menuBtn2) And GraphicsWindow.MouseX <= Shapes.GetLeft(menuBtn2) + 100 And GraphicsWindow.MouseY >= Shapes.GetTop(menuBtn2) And GraphicsWindow.MouseY <= Shapes.GetTop(menuBtn2) + 100 Then
+      If curUser = "" Then
+        fix:
+        answer = ""
+        TextWindow.Clear()
+        TextWindow.Title = "Log In"
+        TextWindow.Show()
+        TextWindow.Write("Type NEW or CURRENT to indicate what type of account you need: ")  
+        answer = TextWindow.Read()
+        If Text.ConvertToUpperCase(answer) = "NEW" And answer <> "" Then
+          answer2 = ""
+          TextWindow.Write("Please enter a USERNAME: ")
+          answer2 = TextWindow.Read()
+          If answer2 <> "" And File.ReadContents(fpath + "Users\" + answer2 + ".txt") = "" Then
+            answer3 = ""
+            File.WriteContents(fpath + "Users\" + answer2 + ".txt", "") 
+            TextWindow.Write("Please enter a PASSWORD: ")
+            answer3 = TextWindow.Read()
+            If answer3 <> "" Then
+              File.WriteLine(fpath + "Users\" + answer2 + ".txt",1,answer3)
+              curUser = answer2
+              GraphicsWindow.ShowMessage("Account created!", "Success")
+            EndIf  
+          Else
+            GraphicsWindow.ShowMessage("Sorry, this username already exists.","ERROR")
+          EndIf  
+        ElseIf answer <> "" And Text.ConvertToUpperCase(answer) = "CURRENT" Then
+          answer2 = "" 
+          TextWindow.Write("Please enter a USERNAME: ")
+          answer2 = TextWindow.Read()
+          If answer2 <> "" And File.ReadContents(fpath + "Users\" + answer2 + ".txt") <> "" Then 
+            answer3 = ""
+            TextWindow.Write("Please enter a PASSWORD: ")
+            answer3 = TextWindow.Read()
+            pass = File.ReadLine(fpath + "Users\" + answer2 + ".txt",1)
+            If answer3 <> "" And answer3 = pass Then
+              curUser = answer2 
+              GraphicsWindow.ShowMessage("Login success!", "Success")
+            Else
+              GraphicsWindow.ShowMessage("Sorry, that was the wrong password.", "ERROR")  
+            EndIf  
+          Else
+            GraphicsWindow.ShowMessage("Sorry, this username does not exist.","ERROR")
+          EndIf
+        Else 
+          Goto fix
+        EndIf  
+        TextWindow.Hide()
+      Else
+        GraphicsWindow.ShowMessage("Hit OK to log out the current user.", "Confirm")
+        curUser = ""
+      EndIf  
+    EndIf 
+  ElseIf mode = "build" Then
+    If Mouse.IsLeftButtonDown Then
+      If cursor = "blank" Then
+        For i = 1 To blockTotal
+          If GraphicsWindow.MouseX >= blockx[i] - camx And GraphicsWindow.MouseX <= blockx[i] - camx + gridsize And GraphicsWindow.MouseY >= blocky[i] - camy And GraphicsWindow.MouseY <= blocky[i] - camy + gridsize Then
+            If blockType[i] = "door1" Then
+              opTrig = 1
+              opChar = i
+              opType = "door1"
+            EndIf
+            If blockType[i] = "ldoor0" Then
+              opTrig = 1
+              opChar = i
+              opType = "ldoor0"
+            EndIf
+            If blockType[i] = "pdoor0" Then
+              opTrig = 1
+              opChar = i
+              opType = "pdoor0"
+            EndIf
+          EndIf
+        EndFor
+      EndIf  
+      If GraphicsWindow.MouseX >= goalX - camx And GraphicsWindow.MouseX <= goalX - camx + 32 And GraphicsWindow.MouseY >= goalY - camy And GraphicsWindow.MouseY <= goalY - camy + 32 Then
+        drag = 7
+      EndIf  
+      For i = 1 To 2
+        For k = 1 To 17
+          If slotVar[i][k] <> "" And GraphicsWindow.MouseX >= Shapes.GetLeft(slot[i][k]) And GraphicsWindow.MouseX <= Shapes.GetLeft(slot[i][k]) + 40 And GraphicsWindow.MouseY >= Shapes.GetTop(slot[i][k]) And GraphicsWindow.MouseY <= Shapes.GetTop(slot[i][k]) + 40 And cursor <> slotVar[i][k] Then
+            Shapes.Remove(cursorPic)
+            If slotVar[i][k] = "doorIcon" Then
+              cursor = "door1"
+            ElseIf slotVar[i][k] = "ldoorIcon" Then
+              cursor = "ldoor0"  
+            ElseIf slotVar[i][k] = "pdoorIcon" Then
+              cursor = "pdoor0"    
+            Else
+              cursor = slotVar[i][k]
+            EndIf
+            cursorPic = Shapes.AddImage(fpath + cursor + ".png")
+            Shapes.SetOpacity(cursorPic, 50)
+            Shapes.Move(cursorPic, GraphicsWindow.MouseX - gridsize/2, GraphicsWindow.MouseY - gridsize/2)
+          EndIf
+        EndFor
+      EndFor
+      If GraphicsWindow.MouseX >= Shapes.GetLeft(playBtn) And GraphicsWindow.MouseX <= Shapes.GetLeft(playBtn) + 100 And GraphicsWindow.MouseY >= Shapes.GetTop(playBtn) And GraphicsWindow.MouseY <= Shapes.GetTop(playBtn) + 100 Then
+        mode = "test"
+      EndIf
+      If GraphicsWindow.MouseX >= Shapes.GetLeft(finishBtn) And GraphicsWindow.MouseX <= Shapes.GetLeft(finishBtn) + 100 And GraphicsWindow.MouseY >= Shapes.GetTop(finishBtn) And GraphicsWindow.MouseY <= Shapes.GetTop(finishBtn) + 100 Then
+        mode = "finish"
+      EndIf
+      If GraphicsWindow.MouseX >= Shapes.GetLeft(eraseBtn) And GraphicsWindow.MouseX <= Shapes.GetLeft(eraseBtn) + 40 And GraphicsWindow.MouseY >= Shapes.GetTop(eraseBtn) And GraphicsWindow.MouseY <= Shapes.GetTop(eraseBtn) + 40 Then
+        cursor = "erase"
+        Shapes.Remove(cursorPic)
+        cursorPic = Shapes.AddImage(fpath + "eraser.png")
+        Shapes.SetOpacity(cursorPic, 50)
+        Shapes.Move(cursorPic, GraphicsWindow.MouseX - gridsize/2, GraphicsWindow.MouseY - gridsize/2)
+      EndIf
+      If GraphicsWindow.MouseX >= Shapes.GetLeft(bgBtn) And GraphicsWindow.MouseX <= Shapes.GetLeft(bgBtn) + 40 And GraphicsWindow.MouseY >= Shapes.GetTop(bgBtn) And GraphicsWindow.MouseY <= Shapes.GetTop(bgBtn) + 40 Then
+        TextWindow.Clear()
+        TextWindow.Title = "Set Background"
+        TextWindow.Show()
+        TextWindow.Write("Enter new background color here: ")
+        bg = TextWindow.Read()
+        GraphicsWindow.BackgroundColor = bg
+        TextWindow.Hide()
+      EndIf
+      If GraphicsWindow.MouseX >= Shapes.GetLeft(musicBtn) And GraphicsWindow.MouseX <= Shapes.GetLeft(musicBtn) + 40 And GraphicsWindow.MouseY >= Shapes.GetTop(musicBtn) And GraphicsWindow.MouseY <= Shapes.GetTop(musicBtn) + 40 Then
+        TextWindow.Clear()
+        TextWindow.Title = "Set Song"
+        TextWindow.Show()
+        TextWindow.WriteLine("Songs: ")
+        sounds = File.GetFiles(fpath + "Music\")
+        For i = 1 To Array.GetItemCount(sounds)
+          TextWindow.WriteLine(sounds[i])
+        EndFor  
+        TextWindow.Write("Type in SONG NAME ONLY: ")
+        song = TextWindow.Read()
+        If Text.ConvertToUpperCase(song) = "YOUNG" Then
+          TextWindow.Clear()
+          TextWindow.WriteLine("Cheat activated!")
+          sounds = File.GetFiles(fpath + "Music\Young\")
+          For i = 1 To Array.GetItemCount(sounds)
+            TextWindow.WriteLine(sounds[i])
+          EndFor
+          TextWindow.Write("Type in SONG NAME ONLY: ")
+          song = "Young\" + TextWindow.Read()
+        ElseIf Text.ConvertToUpperCase(song) = "CRAZY" Then
+          song = "Crazy\Crazy"
+        ElseIf Text.ConvertToUpperCase(song) = "PANDA" Then  
+          song = "Panda\Panda"
+        EndIf  
+        TextWindow.Hide()
+      EndIf  
+      If GraphicsWindow.MouseX >= Shapes.GetLeft(clearBtn) And GraphicsWindow.MouseX <= Shapes.GetLeft(clearBtn) + 40 And GraphicsWindow.MouseY >= Shapes.GetTop(clearBtn) And GraphicsWindow.MouseY <= Shapes.GetTop(clearBtn) + 40 Then
+        Shapes.Remove(cursorPic)
+        cursor = "blank"
+        pinkTotal = 0
+        For i = 1 To blockTotal
+          Shapes.Remove(block[i])
+          blockType[i] = ""
+          blockCol[i] = ""
+          blockx[i] = ""
+          blocky[i] = ""
+        EndFor  
+        blockTotal = 0  
+        For i = 1 To maxh
+          For j = 1 To maxw
+            If tile[i][j] <> "spawn" And tile[i][j] <> "goal" Then
+              tile[i][j] = "blank"
+              tileId[i][j] = 0
+            EndIf
+          EndFor
+        EndFor  
+      EndIf  
+      If cursor <> "erase" And cursor <> "blank" And GraphicsWindow.MouseX > menusize And GraphicsWindow.MouseX < width + menusize And GraphicsWindow.MouseY > menusize And GraphicsWindow.MouseY < height + menusize Then  
+        xmark = Math.Ceiling((camx + (GraphicsWindow.MouseX-menusize))/gridsize)
+        ymark = Math.Ceiling((camy + (GraphicsWindow.MouseY-menusize))/gridsize)
+        If (cursor <> "door1" Or (cursor = "door1" And tile[ymark+1][xmark] <> cursor And tile[ymark+1][xmark] <> "spawn" And tile[ymark+1][xmark] <> "goal" And tile[ymark][xmark] <> "door1L")) And (cursor <> "ldoor0" Or (cursor = "ldoor0" And tile[ymark+1][xmark] <> cursor And tile[ymark+1][xmark] <> "spawn" And tile[ymark+1][xmark] <> "goal" And tile[ymark][xmark] <> "ldoor0L")) And (cursor <> "pdoor0" Or (cursor = "pdoor0" And tile[ymark+1][xmark] <> cursor And tile[ymark+1][xmark] <> "spawn" And tile[ymark+1][xmark] <> "goal" And tile[ymark][xmark] <> "pdoor0L")) And tile[ymark][xmark] <> cursor And tile[ymark][xmark] <> "spawn" And tile[ymark][xmark] <> "goal" Then
+          prevtile = tile[ymark][xmark]
+          tile[ymark][xmark] = cursor
+          If cursor = "door1" Then
+            tile[ymark+1][xmark] = "door1L"
+          EndIf
+          If cursor = "ldoor0" Then
+            tile[ymark+1][xmark] = "ldoor0L"
+          EndIf  
+          If cursor = "pdoor0" Then
+            tile[ymark+1][xmark] = "pdoor0L"
+          EndIf  
+          If (cursor <> "door1" Or (cursor = "door1" And tileId[ymark+1][xmark] = 0)) And (cursor <> "ldoor0" Or (cursor = "ldoor0" And tileId[ymark+1][xmark] = 0)) And (cursor <> "pdoor0" Or (cursor = "pdoor0" And tileId[ymark+1][xmark] = 0)) And tileId[ymark][xmark] = 0 Then
+            blockTotal = blockTotal + 1
+            tileId[ymark][xmark] = blockTotal
+            If cursor = "door1" Or cursor = "ldoor0" Or cursor = "pdoor0" Then
+              tileId[ymark+1][xmark] = blockTotal
+            EndIf  
+          Else
+            If prevtile = "door1" Or prevtile = "ldoor0" Or prevtile = "pdoor0" Then
+              tile[ymark+1][xmark] = "blank"
+              tileId[ymark+1][xmark] = 0
+            ElseIf prevtile = "door1L" Or prevtile = "ldoor0L" Or prevtile = "pdoor0L" Then
+              tile[ymark-1][xmark] = "blank"
+              tileId[ymark-1][xmark] = 0
+            EndIf
+            Shapes.Remove(block[tileId[ymark][xmark]])
+            If cursor = "door1" Or cursor = "ldoor0" Or cursor = "pdoor0" Then
+              Shapes.Remove(block[tileId[ymark+1][xmark]])
+              tileId[ymark+1][xmark] = tileId[ymark][xmark]
+            EndIf   
+          EndIf  
+          block[tileId[ymark][xmark]] = Shapes.AddImage(fpath + cursor + ".png")
+          blockType[tileId[ymark][xmark]] = cursor
+          blockCol[tileId[ymark][xmark]] = "none"
+          blockx[tileId[ymark][xmark]] = menusize + (xmark-1)*gridsize
+          blocky[tileId[ymark][xmark]] = menusize + (ymark-1)*gridsize
+          Shapes.Move(block[tileId[ymark][xmark]], blockx[tileId[ymark][xmark]], blocky[tileId[ymark][xmark]]) 
+          If cursor = "pinkcoin" Then
+            pinkTotal = pinkTotal + 1
+          EndIf    
+        EndIf  
+        'Kyrell
+      EndIf  
+      If cursor = "erase" And GraphicsWindow.MouseX > menusize And GraphicsWindow.MouseX < width + menusize And GraphicsWindow.MouseY > menusize And GraphicsWindow.MouseY < height + menusize Then  
+        xmark = Math.Ceiling((camx + (GraphicsWindow.MouseX-menusize))/gridsize)
+        ymark = Math.Ceiling((camy + (GraphicsWindow.MouseY-menusize))/gridsize)
+        If tile[ymark][xmark] <> "blank" And tile[ymark][xmark] <> "spawn" And tile[ymark][xmark] <> "goal" Then
+          If blockType[tileId[ymark][xmark]] = "pinkcoin" Then
+            pinkTotal = pinkTotal - 1
+          EndIf
+          If tile[ymark][xmark] = "door1" Or tile[ymark][xmark] = "ldoor0" Or tile[ymark][xmark] = "pdoor0" Then
+            tile[ymark+1][xmark] = "blank"
+            tileId[ymark+1][xmark] = 0
+          ElseIf tile[ymark][xmark] = "door1L" Or tile[ymark][xmark] = "ldoor0L" Or tile[ymark][xmark] = "pdoor0L" Then
+            Shapes.Remove(block[tileId[ymark-1][xmark]])
+            tile[ymark-1][xmark] = "blank"
+            blockType[tileId[ymark-1][xmark]] = ""
+            blockCol[tileId[ymark-1][xmark]] = ""
+            blockx[tileId[ymark-1][xmark]] = ""
+            blocky[tileId[ymark-1][xmark]] = ""
+            tileId[ymark-1][xmark] = 0
+          EndIf
+          Shapes.Remove(block[tileId[ymark][xmark]])
+          tile[ymark][xmark] = "blank"
+          blockType[tileId[ymark][xmark]] = ""
+          blockCol[tileId[ymark][xmark]] = ""
+          blockx[tileId[ymark][xmark]] = ""
+          blocky[tileId[ymark][xmark]] = ""
+          tileId[ymark][xmark] = 0
+        EndIf  
+      EndIf  
+      If GraphicsWindow.MouseY >= height - 10 + menusize And GraphicsWindow.MouseX >= (width * camx)/(maxw*gridsize) + menusize And GraphicsWindow.MouseX <= (width * camx)/(maxw*gridsize) + Math.Power(width,2)/(maxw*gridsize) + menusize Then
+        offsetx = GraphicsWindow.MouseX - ((width * camx)/(maxw*gridsize))
+      EndIf
+      If GraphicsWindow.MouseX >= width - 10 + menusize And GraphicsWindow.MouseY >= (height * camy)/(maxh*gridsize) + menusize And GraphicsWindow.MouseY <= (height * camy)/(maxh*gridsize) + Math.Power(height,2)/(maxh*gridsize) + menusize Then
+        offsety = GraphicsWindow.MouseY - ((height * camy)/(maxh*gridsize))
+      EndIf  
+      If GraphicsWindow.MouseX >= playerX And GraphicsWindow.MouseX <= playerX + gridsize And GraphicsWindow.MouseY >= playerY And GraphicsWindow.MouseY <= playerY + gridsize And cursor = "blank" Then
+        offsetpx = GraphicsWindow.MouseX - playerX
+        offsetpy = GraphicsWindow.MouseY - playerY
+        deltax = 0
+        deltay = 0
+        prevposx = 0
+        prevposy = 0 
+        throwx = 0
+        throwy = 0  
+      EndIf 
+    ElseIf Mouse.IsRightButtonDown Then
+      Shapes.Remove(cursorPic)
+      cursor = "blank"  
+    EndIf 
+  ElseIf mode = "test" Or mode = "finish" Or mode = "play" Then
+    If GraphicsWindow.MouseX >= Shapes.GetLeft(stopBtn) And GraphicsWindow.MouseX <= Shapes.GetLeft(stopBtn) + 100 And GraphicsWindow.MouseY >= Shapes.GetTop(stopBtn) And GraphicsWindow.MouseY <= Shapes.GetTop(stopBtn) + 100 Then
+      If mode = "test" Or mode = "finish" Then
+        mode = "build"
+      Else
+        mode = "REDO" 
+      EndIf  
+    EndIf  
+  EndIf   
+EndSub  
+
+Sub MouseUpEvent
+  If mode = "build" Then
+    drag = 0
+    If deltax > 3 Or deltax < -3 Then
+      If deltax > 10 Or deltax <-10 Then
+        throwx = (deltax/Math.Abs(deltax)) * 10
+      Else
+        throwx = deltax
+      EndIf  
+    EndIf 
+    If deltay > 3 Or deltay < -3 Then
+      If deltay > 10 Or deltay <-10 Then
+        throwy = (deltay/Math.Abs(deltay)) * 10
+      Else
+        throwy = deltay
+      EndIf
+    EndIf 
+  EndIf  
+EndSub  
+
+Sub MouseMoveEvent
+  If mode = "build" Then
+    If Mouse.IsLeftButtonDown Then
+      If drag = 7 Then
+        xmark = Math.Ceiling((camx + (GraphicsWindow.MouseX-menusize))/gridsize)
+        ymark = Math.Ceiling((camy + (GraphicsWindow.MouseY-menusize))/gridsize)
+        If tile[ymark][xmark] = "blank" And tile[ymark][xmark] <> "spawn" And tile[ymark][xmark] <> "goal" Then
+          tile[ymark][xmark] = "goal"
+          tileId[ymark][xmark] = -1
+          goalX = menusize + (xmark-1)*gridsize
+          goalY = menusize + (ymark-1)*gridsize
+          tile[goalId1][goalId2] = "blank"
+          tileId[goalId1][goalId2] = 0
+          goalId1 = ymark
+          goalId2 = xmark
+        EndIf  
+      EndIf  
+      If cursor <> "erase" And cursor <> "blank" And GraphicsWindow.MouseX > menusize And GraphicsWindow.MouseX < width + menusize And GraphicsWindow.MouseY > menusize And GraphicsWindow.MouseY < height + menusize Then  
+        xmark = Math.Ceiling((camx + (GraphicsWindow.MouseX-menusize))/gridsize)
+        ymark = Math.Ceiling((camy + (GraphicsWindow.MouseY-menusize))/gridsize)
+        If (cursor <> "door1" Or (cursor = "door1" And tile[ymark+1][xmark] <> cursor And tile[ymark+1][xmark] <> "spawn" And tile[ymark+1][xmark] <> "goal" And tile[ymark][xmark] <> "door1L")) And (cursor <> "ldoor0" Or (cursor = "ldoor0" And tile[ymark+1][xmark] <> cursor And tile[ymark+1][xmark] <> "spawn" And tile[ymark+1][xmark] <> "goal" And tile[ymark][xmark] <> "ldoor0L")) And (cursor <> "pdoor0" Or (cursor = "pdoor0" And tile[ymark+1][xmark] <> cursor And tile[ymark+1][xmark] <> "spawn" And tile[ymark+1][xmark] <> "goal" And tile[ymark][xmark] <> "pdoor0L")) And tile[ymark][xmark] <> cursor And tile[ymark][xmark] <> "spawn" And tile[ymark][xmark] <> "goal" Then
+          prevtile = tile[ymark][xmark]
+          tile[ymark][xmark] = cursor
+          If cursor = "door1" Then
+            tile[ymark+1][xmark] = "door1L"
+          EndIf
+          If cursor = "ldoor0" Then
+            tile[ymark+1][xmark] = "ldoor0L"
+          EndIf
+          If cursor = "pdoor0" Then
+            tile[ymark+1][xmark] = "pdoor0L"
+          EndIf
+          If (cursor <> "door1" Or (cursor = "door1" And tileId[ymark+1][xmark] = 0)) And (cursor <> "ldoor0" Or (cursor = "ldoor0" And tileId[ymark+1][xmark] = 0)) And (cursor <> "pdoor0" Or (cursor = "pdoor0" And tileId[ymark+1][xmark] = 0)) And tileId[ymark][xmark] = 0 Then
+            blockTotal = blockTotal + 1
+            tileId[ymark][xmark] = blockTotal
+            If cursor = "door1" Or cursor = "ldoor0" Or cursor = "pdoor0" Then
+              tileId[ymark+1][xmark] = blockTotal
+            EndIf  
+          Else
+            If prevtile = "door1" Or prevtile = "ldoor0" Or prevtile = "pdoor0" Then
+              tile[ymark+1][xmark] = "blank"
+              tileId[ymark+1][xmark] = 0
+            ElseIf prevtile = "door1L" Or prevtile = "ldoor0L" Or prevtile = "pdoor0L" Then
+              Shapes.Remove(block[tileId[ymark-1][xmark]])
+              tile[ymark-1][xmark] = "blank"
+              tileId[ymark-1][xmark] = 0
+            EndIf
+            Shapes.Remove(block[tileId[ymark][xmark]])  
+            If cursor = "door1" Or cursor = "ldoor0" Or cursor = "pdoor0" Then
+              Shapes.Remove(block[tileId[ymark+1][xmark]])
+              tileId[ymark+1][xmark] = tileId[ymark][xmark]
+            EndIf 
+          EndIf  
+          block[tileId[ymark][xmark]] = Shapes.AddImage(fpath + cursor + ".png")
+          blockType[tileId[ymark][xmark]] = cursor
+          blockCol[tileId[ymark][xmark]] = "none"
+          blockx[tileId[ymark][xmark]] = menusize + (xmark-1)*gridsize
+          blocky[tileId[ymark][xmark]] = menusize + (ymark-1)*gridsize
+          Shapes.Move(block[tileId[ymark][xmark]], blockx[tileId[ymark][xmark]], blocky[tileId[ymark][xmark]]) 
+          If blockType[tileId[ymark][xmark]] = "pinkcoin" Then
+            pinkTotal = pinkTotal + 1
+          EndIf
+        EndIf  
+        'Kyrell
+      EndIf  
+      If cursor = "erase" And GraphicsWindow.MouseX > menusize And GraphicsWindow.MouseX < width + menusize And GraphicsWindow.MouseY > menusize And GraphicsWindow.MouseY < height + menusize Then  
+        xmark = Math.Ceiling((camx + (GraphicsWindow.MouseX-menusize))/gridsize)
+        ymark = Math.Ceiling((camy + (GraphicsWindow.MouseY-menusize))/gridsize)
+        If tile[ymark][xmark] <> "blank" And tile[ymark][xmark] <> "spawn" And tile[ymark][xmark] <> "goal" Then
+          If blockType[tileId[ymark][xmark]] = "pinkcoin" Then
+            pinkTotal = pinkTotal - 1
+          EndIf
+          If tile[ymark][xmark] = "door1" Or tile[ymark][xmark] = "ldoor0" Or tile[ymark][xmark] = "pdoor0" Then
+            tile[ymark+1][xmark] = "blank"
+            tileId[ymark+1][xmark] = 0
+          ElseIf tile[ymark][xmark] = "door1L" Or tile[ymark][xmark] = "ldoor0L" Or tile[ymark][xmark] = "pdoor0L" Then
+            Shapes.Remove(block[tileId[ymark-1][xmark]])
+            tile[ymark-1][xmark] = "blank"
+            blockType[tileId[ymark-1][xmark]] = ""
+            blockCol[tileId[ymark-1][xmark]] = ""
+            blockx[tileId[ymark-1][xmark]] = ""
+            blocky[tileId[ymark-1][xmark]] = ""
+            tileId[ymark-1][xmark] = 0
+          EndIf
+          Shapes.Remove(block[tileId[ymark][xmark]])
+          tile[ymark][xmark] = "blank"
+          blockType[tileId[ymark][xmark]] = ""
+          blockCol[tileId[ymark][xmark]] = ""
+          blockx[tileId[ymark][xmark]] = ""
+          blocky[tileId[ymark][xmark]] = ""
+          tileId[ymark][xmark] = 0
+        EndIf  
+      EndIf  
+    EndIf  
+    Shapes.Move(cursorPic, GraphicsWindow.MouseX - gridsize/2, GraphicsWindow.MouseY - gridsize/2)
+    If cursor = "blank" And ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseY > height - 10 + menusize And GraphicsWindow.MouseX > (width * camx)/(maxw*gridsize) - offsetx + menusize And GraphicsWindow.MouseX < (width * camx)/(maxw*gridsize) + Math.Power(width,2)/(maxw*gridsize) + menusize) Or drag = 1) And GraphicsWindow.MouseX - offsetx >= 0 And GraphicsWindow.MouseX + Math.Power(width,2)/(maxw*gridsize) - offsetx <= width Then
+      drag = 1
+      camx = ((maxw*gridsize*(GraphicsWindow.MouseX-offsetx)))/width
+    EndIf
+    If cursor = "blank" And ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseX > width - 10 + menusize And GraphicsWindow.MouseY > (height * camy)/(maxh*gridsize) - offsety + menusize And GraphicsWindow.MouseY < (height * camy)/(maxh*gridsize) + Math.Power(height,2)/(maxh*gridsize) + menusize) Or drag = 2) And GraphicsWindow.MouseY - offsety >= 0 And GraphicsWindow.MouseY + Math.Power(height,2)/(maxh*gridsize) - offsety <= height Then
+      drag = 2
+      camy = ((maxh*gridsize*(GraphicsWindow.MouseY-offsety)))/height
+    EndIf
+    If ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseX >= playerX And GraphicsWindow.MouseX <= playerX + gridsize And GraphicsWindow.MouseY >= playerY And GraphicsWindow.MouseY <= playerY + gridsize) Or drag = 3) And GraphicsWindow.MouseX - offsetpx >= 0 + menusize And GraphicsWindow.MouseX + gridsize - offsetpx <= width + menusize And cursor = "blank" Then
+      drag = 3
+      playerX = GraphicsWindow.MouseX - offsetpx
+    EndIf
+    If ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseX >= playerX And GraphicsWindow.MouseX <= playerX + gridsize And GraphicsWindow.MouseY >= playerY And GraphicsWindow.MouseY <= playerY + gridsize) Or drag = 3) And GraphicsWindow.MouseY - offsetpy >= 0 + menusize And GraphicsWindow.MouseY + gridsize - offsetpy <= height + menusize And cursor = "blank" Then
+      drag = 3
+      playerY = GraphicsWindow.MouseY - offsetpy
+    EndIf  
+    If drag = 3 And cursor = "blank" Then
+      deltax = GraphicsWindow.MouseX - prevposx
+      deltay = GraphicsWindow.MouseY - prevposy 
+      prevposx = GraphicsWindow.MouseX
+      prevposy = GraphicsWindow.MouseY
+    Else
+      deltax = 0
+      deltay = 0
+      prevposx = 0
+      prevposy = 0  
+    EndIf  
+  EndIf  
+EndSub 

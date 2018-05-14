@@ -1,0 +1,44 @@
+fpath = Program.Directory + "\"
+GraphicsWindow.Show()
+GraphicsWindow.Title = "Find the Difference!"
+GraphicsWindow.Width = 40*20
+GraphicsWindow.Height = 40*20
+Test:
+GraphicsWindow.Clear()
+GraphicsWindow.MouseDown = MouseEvent
+total = 400
+x = 0
+win = 0
+chosen = 0
+For i = 1 To 20
+  For k = 1 To 20
+    x = x + 1
+    num = Math.GetRandomNumber(total)
+    total = total - 1
+    If num = 1 And chosen <> 1 Then
+      mill[x] = Shapes.AddImage(fpath + "hobo.png")
+      Shapes.Move(mill[x], 40*(i-1), 40*(k-1))
+      chosen = 1
+    Else 
+      hobo[x] = Shapes.AddImage(fpath + "downvote.png")
+      Shapes.Move(hobo[x], 40*(i-1), 40*(k-1)) 
+    EndIf  
+  EndFor  
+EndFor  
+While win = 0
+EndWhile  
+Program.Delay(1000)
+Goto Test
+Sub MouseEvent
+  For i = 1 To 400
+    If GraphicsWindow.MouseX <= Shapes.GetLeft(hobo[i]) + 40 And GraphicsWindow.MouseX >= Shapes.GetLeft(hobo[i]) And GraphicsWindow.MouseY <= Shapes.GetTop(hobo[i]) + 40 And GraphicsWindow.MouseY >= Shapes.GetTop(hobo[i]) Then
+      hobo2 = Shapes.AddImage(fpath + "downvoted.png")
+      Shapes.Move(hobo2, Shapes.GetLeft(hobo[i]), Shapes.GetTop(hobo[i])) 
+    EndIf  
+    If GraphicsWindow.MouseX <= Shapes.GetLeft(mill[i]) + 40 And GraphicsWindow.MouseX >= Shapes.GetLeft(mill[i]) And GraphicsWindow.MouseY <= Shapes.GetTop(mill[i]) + 40 And GraphicsWindow.MouseY >= Shapes.GetTop(mill[i]) Then
+      mill2 = Shapes.AddImage(fpath + "hobod.png")
+      Shapes.Move(mill2, Shapes.GetLeft(mill[i]), Shapes.GetTop(mill[i])) 
+      win = 1
+    EndIf   
+  EndFor  
+EndSub  

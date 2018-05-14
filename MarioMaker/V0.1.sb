@@ -1,0 +1,200 @@
+' MANDATORY FIRST SETUP VARIABLES
+fpath = Program.Directory + "\"
+' PRE-DEFINED VARIABLES '
+maxw = 240
+maxh = 28
+gridsize = 32
+scroll = 4
+
+drag = 0
+
+camUp = 0
+camDown = 0
+camLeft = 0 
+camRight = 0
+
+playerUp = 0
+playerDown = 0
+playerLeft = 0 
+playerRight = 0
+
+' GRAPHICSWINDOW SET-UP ' 
+width = Math.Round(maxw/10) * gridsize
+height = Math.Round(maxh/2) * gridsize
+GraphicsWindow.Width = width
+GraphicsWindow.Height = height
+GraphicsWindow.PenWidth = 0
+GraphicsWindow.BackgroundColor = "SkyBlue"
+
+' DESIGN MODE SET-UP '
+For i = 0 To maxw
+  GraphicsWindow.BrushColor = "White"
+  If Math.Round((i*gridsize)/width) = (i*gridsize)/width Then 
+    GraphicsWindow.BrushColor = "Gold"
+  EndIf  
+  line[1][i] = Shapes.AddRectangle(1,maxh*gridsize)
+  linex[1][i] = i*gridsize
+  liney[1][i] = 0
+  Shapes.Move(line[1][i],linex[1][i],liney[1][i])
+EndFor
+For i = 0 To maxh
+  GraphicsWindow.BrushColor = "White"
+  If Math.Round((i*gridsize)/height) = (i*gridsize)/height Then 
+    GraphicsWindow.BrushColor = "Gold"
+  EndIf
+  line[2][i] = Shapes.AddRectangle(maxw*gridsize,1)
+  linex[2][i] = 0
+  liney[2][i] = i*gridsize
+  Shapes.Move(line[2][i],linex[2][i],liney[2][i])
+EndFor
+camx = 0
+camy = (Math.Round(maxh)*gridsize)  - (Math.Round(maxh/2)*gridsize) 
+wscroll = Math.Power(width,2)/(maxw*gridsize)
+hscroll = Math.Power(height,2)/(maxh*gridsize)
+GraphicsWindow.BrushColor = "Gray"
+wscrollbar = Shapes.AddRectangle(wscroll, 10)
+hscrollbar = Shapes.AddRectangle(10, hscroll)
+Shapes.Move(wscrollbar, camx, height - 10)
+Shapes.Move(hscrollbar, width - 10, camy)
+player = Shapes.AddImage(fpath + "player.png")
+playerX = width/2 - gridsize/2
+playerY = height/2 - gridsize/2
+Shapes.Move(player, playerX, playerY)
+
+' EVENT DEFINING '
+GraphicsWindow.KeyDown = KeyDownEvent
+GraphicsWindow.KeyUp = KeyUpEvent
+GraphicsWindow.MouseMove = MouseMoveEvent
+GraphicsWindow.MouseDown = MouseDownEvent
+GraphicsWindow.MouseUp = MouseUpEvent
+
+' MAIN LOOP '
+While "true"
+  Program.Delay(10)
+  'Update Camera positions
+  If camx + width - camLeft + camRight <= maxw * gridsize And camx - camLeft + camRight >= 0 Then
+    camx = camx - camLeft + camRight
+  EndIf
+  If camy + height - camUp + camDown <= maxh * gridsize And camy - camUp + camDown >= 0 Then  
+    camy = camy - camUp + camDown
+  EndIf 
+  
+  'Move objects (camera)
+  For i = 0 To maxw
+    Shapes.Move(line[1][i], linex[1][i] - camx, liney[1][i] - camy)
+  EndFor
+  For i = 0 To maxh
+    Shapes.Move(line[2][i], linex[2][i] - camx, liney[2][i] - camy)
+  EndFor  
+  Shapes.Move(wscrollbar, (width * camx)/(maxw*gridsize), height - 10)
+  Shapes.Move(hscrollbar, width - 10, (height * camy)/(maxh*gridsize))
+  
+  'Update Player positions
+  If drag <> 3 Then
+    If playerX - playerLeft + playerRight + gridsize <= width And playerX - playerLeft + playerRight >= 0 Then
+      playerX = playerX - playerLeft + playerRight
+    EndIf
+    If playerY - playerUp + playerDown + gridsize <= height And playerY - playerUp + playerDown >= 0 Then
+      playerY = playerY - playerUp + playerDown
+    EndIf
+  EndIf    
+  
+  Shapes.Move(player,playerX,playerY)
+EndWhile
+
+' EVENTS '
+Sub KeyDownEvent
+  If GraphicsWindow.LastKey = "Left" Then
+    camLeft = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "Right" Then
+    camRight = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "Up" Then
+    camUp = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "Down" Then
+    camDown = scroll
+  EndIf
+  
+  If GraphicsWindow.LastKey = "A" Then
+    playerLeft = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "D" Then
+    playerRight = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "W" Then
+    playerUp = scroll
+  EndIf
+  If GraphicsWindow.LastKey = "S" Then
+    playerDown = scroll
+  EndIf  
+EndSub  
+
+Sub KeyUpEvent
+  If GraphicsWindow.LastKey = "Left" Then
+    camLeft = 0
+  EndIf
+  If GraphicsWindow.LastKey = "Right" Then
+    camRight = 0
+  EndIf
+  If GraphicsWindow.LastKey = "Up" Then
+    camUp = 0
+  EndIf
+  If GraphicsWindow.LastKey = "Down" Then
+    camDown = 0
+  EndIf
+  
+  If GraphicsWindow.LastKey = "A" Then
+    playerLeft = 0
+  EndIf
+  If GraphicsWindow.LastKey = "D" Then
+    playerRight = 0
+  EndIf
+  If GraphicsWindow.LastKey = "W" Then
+    playerUp = 0
+  EndIf
+  If GraphicsWindow.LastKey = "S" Then
+    playerDown = 0
+  EndIf 
+EndSub  
+
+Sub MouseDownEvent
+  If GraphicsWindow.MouseY >= height - 10 And GraphicsWindow.MouseX >= (width * camx)/(maxw*gridsize) And GraphicsWindow.MouseX <= (width * camx)/(maxw*gridsize) + Math.Power(width,2)/(maxw*gridsize) Then
+    offsetx = GraphicsWindow.MouseX - ((width * camx)/(maxw*gridsize))
+  EndIf
+  If GraphicsWindow.MouseX >= width - 10 And GraphicsWindow.MouseY >= (height * camy)/(maxh*gridsize) And GraphicsWindow.MouseY <= (height * camy)/(maxh*gridsize) + Math.Power(height,2)/(maxh*gridsize) Then
+    offsety = GraphicsWindow.MouseY - ((height * camy)/(maxh*gridsize))
+  EndIf  
+  If GraphicsWindow.MouseX >= playerX And GraphicsWindow.MouseX <= playerX + gridsize And GraphicsWindow.MouseY >= playerY And GraphicsWindow.MouseY <= playerY + gridsize Then
+    offsetpx = GraphicsWindow.MouseX - playerX
+    offsetpy = GraphicsWindow.MouseY - playerY
+  EndIf  
+EndSub   
+
+Sub MouseUpEvent
+  drag = 0
+EndSub  
+
+Sub MouseMoveEvent
+  deltax = GraphicsWindow.MouseX - prevposx
+  deltay = GraphicsWindow.MouseY - prevposy
+  If ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseY > height - 10 And GraphicsWindow.MouseX > (width * camx)/(maxw*gridsize) - offsetx And GraphicsWindow.MouseX < (width * camx)/(maxw*gridsize) + Math.Power(width,2)/(maxw*gridsize)) Or drag = 1) And GraphicsWindow.MouseX - offsetx >= 0 And GraphicsWindow.MouseX + Math.Power(width,2)/(maxw*gridsize) - offsetx <= width Then
+    drag = 1
+    camx = ((maxw*gridsize*(GraphicsWindow.MouseX-offsetx)))/width
+  EndIf
+  If ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseX > width - 10 And GraphicsWindow.MouseY > (height * camy)/(maxh*gridsize) - offsety And GraphicsWindow.MouseY < (height * camy)/(maxh*gridsize) + Math.Power(height,2)/(maxh*gridsize)) Or drag = 2) And GraphicsWindow.MouseY - offsety >= 0 And GraphicsWindow.MouseY + Math.Power(height,2)/(maxh*gridsize) - offsety <= height Then
+    drag = 2
+    camy = ((maxh*gridsize*(GraphicsWindow.MouseY-offsety)))/height
+  EndIf
+  If ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseX >= playerX And GraphicsWindow.MouseX <= playerX + gridsize And GraphicsWindow.MouseY >= playerY And GraphicsWindow.MouseY <= playerY + gridsize) Or drag = 3) And GraphicsWindow.MouseX - offsetpx >= 0 And GraphicsWindow.MouseX + gridsize - offsetpx <= width Then
+    drag = 3
+    playerX = GraphicsWindow.MouseX - offsetpx
+  EndIf
+  If ((Mouse.IsLeftButtonDown = "True" And GraphicsWindow.MouseX >= playerX And GraphicsWindow.MouseX <= playerX + gridsize And GraphicsWindow.MouseY >= playerY And GraphicsWindow.MouseY <= playerY + gridsize) Or drag = 3) And GraphicsWindow.MouseY - offsetpy >= 0 And GraphicsWindow.MouseY + gridsize - offsetpy <= height Then
+    drag = 3
+    playerY = GraphicsWindow.MouseY - offsetpy
+  EndIf  
+  prevposx = GraphicsWindow.MouseX
+  prevposy = GraphicsWindow.MouseY
+EndSub 
